@@ -41,14 +41,14 @@ func testFetcher(t *testing.T, when spec.G, it spec.S) {
 		h.AssertNil(t, os.Remove(lifecycleTgz))
 	})
 
-	when("#Fetch", func() {
+	when("#FetchLifecycle", func() {
 		when("only a version is provided", func() {
 			it("returns a release from github", func() {
 				mockDownloader.EXPECT().
 					Download("https://github.com/buildpack/lifecycle/releases/download/v1.2.3/lifecycle-v1.2.3+linux.x86-64.tgz").
 					Return(lifecycleTgz, nil)
 
-				md, err := subject.Fetch(semver.MustParse("1.2.3"), "")
+				md, err := subject.FetchLifecycle(semver.MustParse("1.2.3"), "")
 				h.AssertNil(t, err)
 				h.AssertEq(t, md.Version.String(), "1.2.3")
 				h.AssertEq(t, md.Path, lifecycleTgz)
@@ -61,7 +61,7 @@ func testFetcher(t *testing.T, when spec.G, it spec.S) {
 					Download("https://lifecycle.example.com").
 					Return(lifecycleTgz, nil)
 
-				md, err := subject.Fetch(nil, "https://lifecycle.example.com")
+				md, err := subject.FetchLifecycle(nil, "https://lifecycle.example.com")
 				h.AssertNil(t, err)
 				h.AssertNil(t, md.Version)
 				h.AssertEq(t, md.Path, lifecycleTgz)
@@ -74,7 +74,7 @@ func testFetcher(t *testing.T, when spec.G, it spec.S) {
 					Download("https://lifecycle.example.com").
 					Return(lifecycleTgz, nil)
 
-				md, err := subject.Fetch(semver.MustParse("1.2.3"), "https://lifecycle.example.com")
+				md, err := subject.FetchLifecycle(semver.MustParse("1.2.3"), "https://lifecycle.example.com")
 				h.AssertNil(t, err)
 				h.AssertEq(t, md.Version.String(), "1.2.3")
 				h.AssertEq(t, md.Path, lifecycleTgz)
@@ -91,7 +91,7 @@ func testFetcher(t *testing.T, when spec.G, it spec.S) {
 					)).
 					Return(lifecycleTgz, nil)
 
-				md, err := subject.Fetch(nil, "")
+				md, err := subject.FetchLifecycle(nil, "")
 				h.AssertNil(t, err)
 				h.AssertEq(t, md.Version.String(), lifecycle.DefaultLifecycleVersion)
 				h.AssertEq(t, md.Path, lifecycleTgz)
@@ -112,7 +112,7 @@ func testFetcher(t *testing.T, when spec.G, it spec.S) {
 					)).
 					Return(tmp, nil)
 
-				_, err = subject.Fetch(nil, "")
+				_, err = subject.FetchLifecycle(nil, "")
 				h.AssertError(t, err, "invalid lifecycle")
 			})
 		})
@@ -135,7 +135,7 @@ func testFetcher(t *testing.T, when spec.G, it spec.S) {
 					)).
 					Return(tmp, nil)
 
-				_, err = subject.Fetch(nil, "")
+				_, err = subject.FetchLifecycle(nil, "")
 				h.AssertError(t, err, "invalid lifecycle")
 			})
 		})

@@ -1,4 +1,4 @@
-package buildpack
+package blob
 
 import (
 	"os"

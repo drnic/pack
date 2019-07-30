@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 
-	pack "github.com/buildpack/pack"
+	pack "github.com/blob/pack"
 )
 
 // MockPackClient is a mock of PackClient interface

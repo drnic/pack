@@ -20,7 +20,7 @@ import (
 	"github.com/buildpack/imgutil"
 	"github.com/pkg/errors"
 
-	"github.com/buildpack/pack/buildpack"
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/internal/archive"
 	"github.com/buildpack/pack/lifecycle"
 	"github.com/buildpack/pack/style"
@@ -40,7 +40,7 @@ const (
 type Builder struct {
 	image                imgutil.Image
 	lifecyclePath        string
-	additionalBuildpacks []buildpack.Buildpack
+	additionalBuildpacks []blob.Buildpack
 	metadata             Metadata
 	env                  map[string]string
 	UID, GID             int
@@ -60,7 +60,7 @@ type OrderEntry struct {
 }
 
 type BuildpackRef struct {
-	buildpack.BuildpackInfo
+	blob.BuildpackInfo
 	Optional bool `toml:"optional,omitempty"`
 }
 
@@ -163,14 +163,14 @@ func (b *Builder) GetStackInfo() StackMetadata {
 	return b.metadata.Stack
 }
 
-func (b *Builder) AddBuildpack(bp buildpack.Buildpack) {
+func (b *Builder) AddBuildpack(bp blob.Buildpack) {
 	b.additionalBuildpacks = append(b.additionalBuildpacks, bp)
 	b.metadata.Buildpacks = append(b.metadata.Buildpacks, BuildpackMetadata{
 		BuildpackInfo: bp.Info,
 	})
 }
 
-func (b *Builder) SetLifecycle(md lifecycle.Metadata) error {
+func (b *Builder) SetLifecycle(md lifecycle.Lifecycle) error {
 	b.metadata.Lifecycle.Version = md.Version
 	b.lifecyclePath = md.Path
 	return nil
@@ -294,7 +294,7 @@ func processOrder(buildpacks []BuildpackMetadata, order *Order) error {
 		for i := range g.Group {
 			bpRef := &g.Group[i]
 
-			var matchingBps []buildpack.BuildpackInfo
+			var matchingBps []blob.BuildpackInfo
 			for _, bp := range buildpacks {
 				if bpRef.ID == bp.ID {
 					matchingBps = append(matchingBps, bp.BuildpackInfo)
@@ -322,7 +322,7 @@ func processOrder(buildpacks []BuildpackMetadata, order *Order) error {
 	return nil
 }
 
-func hasBuildpackWithVersion(bps []buildpack.BuildpackInfo, version string) bool {
+func hasBuildpackWithVersion(bps []blob.BuildpackInfo, version string) bool {
 	for _, bp := range bps {
 		if bp.Version == version {
 			return true
@@ -332,7 +332,7 @@ func hasBuildpackWithVersion(bps []buildpack.BuildpackInfo, version string) bool
 }
 
 // TODO: error out when using incompatible lifecycle and buildpacks
-func validateBuildpacks(stackID string, bps []buildpack.Buildpack) error {
+func validateBuildpacks(stackID string, bps []blob.Buildpack) error {
 	bpLookup := map[string]interface{}{}
 
 	for _, bp := range bps {
@@ -497,7 +497,7 @@ func (b *Builder) stackLayer(dest string) (string, error) {
 // layer tar = {ID}.{V}.tar
 //
 // inside the layer = /buildpacks/{ID}/{V}/*
-func (b *Builder) buildpackLayer(dest string, bp buildpack.Buildpack) (string, error) {
+func (b *Builder) buildpackLayer(dest string, bp blob.Buildpack) (string, error) {
 	layerTar := filepath.Join(dest, fmt.Sprintf("%s.%s.tar", bp.EscapedID(), bp.Info.Version))
 
 	fh, err := os.Create(layerTar)
@@ -543,7 +543,7 @@ func (b *Builder) buildpackLayer(dest string, bp buildpack.Buildpack) (string, e
 	return layerTar, nil
 }
 
-func (b *Builder) embedBuildpackTar(tw *tar.Writer, bp buildpack.Buildpack, baseTarDir string) error {
+func (b *Builder) embedBuildpackTar(tw *tar.Writer, bp blob.Buildpack, baseTarDir string) error {
 	var (
 		err error
 	)

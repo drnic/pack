@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/buildpack/pack/buildpack"
+	"github.com/buildpack/pack/blob"
 )
 
 type V1Order []V1Group
@@ -53,7 +53,7 @@ func (o Order) ToV1Order() V1Order {
 
 // Deprecated: The 'latest' symlink is in place for backwards compatibility only. This should be removed as soon
 // as we no longer support older releases that rely on it.
-func symlinkLatest(tw *tar.Writer, baseTarDir string, bp buildpack.Buildpack, metadata Metadata) error {
+func symlinkLatest(tw *tar.Writer, baseTarDir string, bp blob.Buildpack, metadata Metadata) error {
 	for _, b := range metadata.Buildpacks {
 		if b.ID == bp.Info.ID && b.Version == bp.Info.Version && b.Latest {
 			err := tw.WriteHeader(&tar.Header{

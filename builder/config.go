@@ -9,7 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 
-	"github.com/buildpack/pack/buildpack"
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/internal/paths"
 )
 
@@ -22,7 +22,7 @@ type Config struct {
 }
 
 type BuildpackConfig struct {
-	buildpack.BuildpackInfo
+	blob.BuildpackInfo
 	URI string `toml:"uri"`
 }
 

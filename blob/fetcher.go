@@ -1,4 +1,4 @@
-package buildpack
+package blob
 
 import (
 	"io/ioutil"
@@ -16,15 +16,6 @@ type Downloader interface {
 	Download(uri string) (string, error)
 }
 
-type buildpackTOML struct {
-	Buildpack struct {
-		ID      string `toml:"id"`
-		Version string `toml:"version"`
-	} `toml:"buildpack"`
-	Order  Order   `toml:"order"`
-	Stacks []Stack `toml:"stacks"`
-}
-
 type Fetcher struct {
 	downloader Downloader
 }
@@ -39,7 +30,7 @@ func (f *Fetcher) FetchBuildpack(uri string) (Buildpack, error) {
 		return Buildpack{}, errors.Wrap(err, "fetching buildpack")
 	}
 
-	bp, err := readTOML(downloadedPath)
+	bp, err := readBuildpackTOML(downloadedPath)
 	if err != nil {
 		return Buildpack{}, err
 	}
@@ -47,7 +38,7 @@ func (f *Fetcher) FetchBuildpack(uri string) (Buildpack, error) {
 	return bp, nil
 }
 
-func readTOML(path string) (Buildpack, error) {
+func readBuildpackTOML(path string) (Buildpack, error) {
 	var (
 		buf []byte
 		err error

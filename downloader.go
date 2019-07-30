@@ -58,11 +58,8 @@ func (d *Downloader) Download(pathOrUri string) (string, error) {
 }
 
 func (d *Downloader) handleFile(path string) (string, error) {
-	var (
-		err error
-	)
-
-	if path, err = filepath.Abs(path); err != nil {
+	path, err := filepath.Abs(path)
+	if err != nil {
 		return "", nil
 	}
 

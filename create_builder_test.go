@@ -17,10 +17,11 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
+	"github.com/buildpack/pack/buildpack"
 	"github.com/buildpack/pack/logging"
 
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
-	"github.com/buildpack/pack/buildpack"
 	imocks "github.com/buildpack/pack/internal/mocks"
 	"github.com/buildpack/pack/lifecycle"
 	"github.com/buildpack/pack/mocks"
@@ -71,19 +72,19 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			imageFetcher.LocalImages["some/run-image"] = fakeRunImage
 			imageFetcher.RemoteImages["localhost:5000/some-run-image"] = fakeRunImageMirror
 
-			bp := buildpack.Buildpack{
-				Info: buildpack.BuildpackInfo{
+			bp := blob.Buildpack{
+				Info: blob.BuildpackInfo{
 					ID:      "bp.one",
 					Version: "1.2.3",
 				},
-				Blob:   buildpack.Blob{Path: filepath.Join("testdata", "buildpack")},
-				Stacks: []buildpack.Stack{{ID: "some.stack.id"}},
+				Stacks: []blob.Stack{{ID: "some.stack.id"}},
+				Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 			}
 
 			mockBPFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
 
 			mockLifecycleFetcher.EXPECT().Fetch(gomock.Any(), gomock.Any()).
-				Return(lifecycle.Metadata{
+				Return(lifecycle.Lifecycle{
 					Path:    filepath.Join("testdata", "lifecycle.tgz"),
 					Version: semver.MustParse("3.4.5"),
 				}, nil).AnyTimes()

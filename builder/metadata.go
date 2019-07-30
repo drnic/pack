@@ -1,8 +1,7 @@
 package builder
 
 import (
-	"github.com/buildpack/pack/buildpack"
-
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/lifecycle"
 )
 
@@ -13,11 +12,11 @@ type Metadata struct {
 	Buildpacks  []BuildpackMetadata `json:"buildpacks"`
 	Groups      V1Order             `json:"groups"` // deprecated
 	Stack       StackMetadata       `json:"stack"`
-	Lifecycle   lifecycle.Metadata  `json:"lifecycle"`
+	Lifecycle   lifecycle.Lifecycle `json:"lifecycle"`
 }
 
 type BuildpackMetadata struct {
-	buildpack.BuildpackInfo
+	blob.BuildpackInfo
 	Latest bool `json:"latest"` // deprecated
 }
 
@@ -32,7 +31,7 @@ type RunImageMetadata struct {
 
 func processMetadata(md *Metadata) error {
 	for i, bp := range md.Buildpacks {
-		var matchingBps []buildpack.BuildpackInfo
+		var matchingBps []blob.BuildpackInfo
 		for _, bp2 := range md.Buildpacks {
 			if bp.ID == bp2.ID {
 				matchingBps = append(matchingBps, bp.BuildpackInfo)

@@ -32,7 +32,7 @@ func NewFetcher(downloader Downloader) *Fetcher {
 	return &Fetcher{downloader: downloader}
 }
 
-func (f *Fetcher) Fetch(version *semver.Version, uri string) (Metadata, error) {
+func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (Lifecycle, error) {
 	if version == nil && uri == "" {
 		version = semver.MustParse(DefaultLifecycleVersion)
 	}
@@ -43,7 +43,7 @@ func (f *Fetcher) Fetch(version *semver.Version, uri string) (Metadata, error) {
 
 	path, err := f.downloader.Download(uri)
 	if err != nil {
-		return Metadata{}, errors.Wrapf(err, "retrieving lifecycle from %s", uri)
+		return Lifecycle{}, errors.Wrapf(err, "retrieving lifecycle from %s", uri)
 	}
 
 	err = validateTarEntries(
@@ -57,10 +57,10 @@ func (f *Fetcher) Fetch(version *semver.Version, uri string) (Metadata, error) {
 		"launcher",
 	)
 	if err != nil {
-		return Metadata{}, errors.Wrapf(err, "invalid lifecycle")
+		return Lifecycle{}, errors.Wrapf(err, "invalid lifecycle")
 	}
 
-	return Metadata{Version: version, Path: path}, nil
+	return Lifecycle{Version: version, Path: path}, nil
 }
 
 func validateTarEntries(tarPath string, entryPath ...string) error {

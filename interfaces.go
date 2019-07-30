@@ -6,7 +6,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil"
 
-	"github.com/buildpack/pack/buildpack"
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/lifecycle"
 )
 
@@ -19,11 +19,11 @@ type ImageFetcher interface {
 //go:generate mockgen -package mocks -destination mocks/buildpack_fetcher.go github.com/buildpack/pack BuildpackFetcher
 
 type BuildpackFetcher interface {
-	FetchBuildpack(uri string) (buildpack.Buildpack, error)
+	FetchBuildpack(uri string) (blob.Buildpack, error)
 }
 
 //go:generate mockgen -package mocks -destination mocks/lifecycle_fetcher.go github.com/buildpack/pack LifecycleFetcher
 
 type LifecycleFetcher interface {
-	Fetch(version *semver.Version, uri string) (lifecycle.Metadata, error)
+	Fetch(version *semver.Version, uri string) (lifecycle.Lifecycle, error)
 }
