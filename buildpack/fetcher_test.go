@@ -1,4 +1,4 @@
-package buildpack_test
+package buildpack
 
 import (
 	"os"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/buildpack/pack/lifecycle/mocks"
 
-	"github.com/buildpack/pack/buildpack"
 	h "github.com/buildpack/pack/testhelpers"
 )
 
@@ -25,16 +24,16 @@ func testBuildpackFetcher(t *testing.T, when spec.G, it spec.S) {
 			buildpackTgz   string
 			mockController *gomock.Controller
 			mockDownloader *mocks.MockDownloader
-			subject        *buildpack.Fetcher
+			subject        *Fetcher
 		)
 
 		it.Before(func() {
 			mockController = gomock.NewController(t)
 			mockDownloader = mocks.NewMockDownloader(mockController)
 
-			subject = buildpack.NewFetcher(mockDownloader)
+			subject = NewFetcher(mockDownloader)
 
-			buildpackTgz = h.CreateTgz(t, filepath.Join("testdata", "buildpack"), "./", 0644)
+			buildpackTgz = h.CreateTGZ(t, filepath.Join("testdata", "buildpack"), "./", 0644)
 		})
 
 		it.After(func() {
@@ -50,15 +49,15 @@ func testBuildpackFetcher(t *testing.T, when spec.G, it spec.S) {
 
 			out, err := subject.FetchBuildpack(downloadPath)
 			h.AssertNil(t, err)
-			h.AssertEq(t, out.ID, "bp.one")
-			h.AssertEq(t, out.Version, "bp.one.version")
+			h.AssertEq(t, out.Info.ID, "bp.one")
+			h.AssertEq(t, out.Info.Version, "bp.one.version")
 			h.AssertEq(t, out.Order[0].Group[0].ID, "bp.nested")
 			h.AssertEq(t, out.Order[0].Group[0].Version, "bp.nested.version")
 			h.AssertEq(t, out.Stacks[0].ID, "some.stack.id")
 			h.AssertEq(t, out.Stacks[1].ID, "other.stack.id")
-			h.AssertNotEq(t, out.Path, "")
-			h.AssertDirContainsFileWithContents(t, out.Path, "bin/detect", "detect")
-			h.AssertDirContainsFileWithContents(t, out.Path, "bin/build", "build")
+			h.AssertNotEq(t, out.Blob.Path, "")
+			h.AssertDirContainsFileWithContents(t, out.Blob.Path, "bin/detect", "detect")
+			h.AssertDirContainsFileWithContents(t, out.Blob.Path, "bin/build", "build")
 		})
 
 		it("fetches a buildpack from a tgz", func() {
@@ -70,15 +69,15 @@ func testBuildpackFetcher(t *testing.T, when spec.G, it spec.S) {
 
 			out, err := subject.FetchBuildpack(downloadPath)
 			h.AssertNil(t, err)
-			h.AssertEq(t, out.ID, "bp.one")
-			h.AssertEq(t, out.Version, "bp.one.version")
+			h.AssertEq(t, out.Info.ID, "bp.one")
+			h.AssertEq(t, out.Info.Version, "bp.one.version")
 			h.AssertEq(t, out.Order[0].Group[0].ID, "bp.nested")
 			h.AssertEq(t, out.Order[0].Group[0].Version, "bp.nested.version")
 			h.AssertEq(t, out.Stacks[0].ID, "some.stack.id")
 			h.AssertEq(t, out.Stacks[1].ID, "other.stack.id")
-			h.AssertNotEq(t, out.Path, "")
-			h.AssertOnTarEntry(t, out.Path, "bin/detect", h.ContentEquals("detect"))
-			h.AssertOnTarEntry(t, out.Path, "bin/build", h.ContentEquals("build"))
+			h.AssertNotEq(t, out.Blob.Path, "")
+			h.AssertOnTarEntry(t, out.Blob.Path, "bin/detect", h.ContentEquals("detect"))
+			h.AssertOnTarEntry(t, out.Blob.Path, "bin/build", h.ContentEquals("build"))
 		})
 	})
 }

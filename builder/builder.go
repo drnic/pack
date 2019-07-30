@@ -166,7 +166,7 @@ func (b *Builder) GetStackInfo() StackMetadata {
 func (b *Builder) AddBuildpack(bp buildpack.Buildpack) {
 	b.additionalBuildpacks = append(b.additionalBuildpacks, bp)
 	b.metadata.Buildpacks = append(b.metadata.Buildpacks, BuildpackMetadata{
-		BuildpackInfo: bp.BuildpackInfo,
+		BuildpackInfo: bp.Info,
 	})
 }
 
@@ -250,7 +250,7 @@ func (b *Builder) Save() error {
 			return err
 		}
 		if err := b.image.AddLayer(layerTar); err != nil {
-			return errors.Wrapf(err, "adding layer tar for buildpack %s:%s", style.Symbol(bp.ID), style.Symbol(bp.Version))
+			return errors.Wrapf(err, "adding layer tar for buildpack %s:%s", style.Symbol(bp.Info.ID), style.Symbol(bp.Info.Version))
 		}
 	}
 
@@ -336,22 +336,22 @@ func validateBuildpacks(stackID string, bps []buildpack.Buildpack) error {
 	bpLookup := map[string]interface{}{}
 
 	for _, bp := range bps {
-		bpLookup[bp.ID+"@"+bp.Version] = nil
+		bpLookup[bp.Info.ID+"@"+bp.Info.Version] = nil
 	}
 
 	for _, bp := range bps {
 		if len(bp.Order) == 0 && len(bp.Stacks) == 0 {
-			return fmt.Errorf("buildpack %s must have either stacks or an order defined", style.Symbol(bp.ID+"@"+bp.Version))
+			return fmt.Errorf("buildpack %s must have either stacks or an order defined", style.Symbol(bp.Info.ID+"@"+bp.Info.Version))
 		}
 
 		if len(bp.Order) >= 1 && len(bp.Stacks) >= 1 {
-			return fmt.Errorf("buildpack %s cannot have both stacks and an order defined", style.Symbol(bp.ID+"@"+bp.Version))
+			return fmt.Errorf("buildpack %s cannot have both stacks and an order defined", style.Symbol(bp.Info.ID+"@"+bp.Info.Version))
 		}
 
 		if len(bp.Stacks) >= 1 && !bp.SupportsStack(stackID) {
 			return fmt.Errorf(
 				"buildpack %s does not support stack %s",
-				style.Symbol(bp.ID+"@"+bp.Version), style.Symbol(stackID),
+				style.Symbol(bp.Info.ID+"@"+bp.Info.Version), style.Symbol(stackID),
 			)
 		}
 
@@ -498,7 +498,7 @@ func (b *Builder) stackLayer(dest string) (string, error) {
 //
 // inside the layer = /buildpacks/{ID}/{V}/*
 func (b *Builder) buildpackLayer(dest string, bp buildpack.Buildpack) (string, error) {
-	layerTar := filepath.Join(dest, fmt.Sprintf("%s.%s.tar", bp.EscapedID(), bp.Version))
+	layerTar := filepath.Join(dest, fmt.Sprintf("%s.%s.tar", bp.EscapedID(), bp.Info.Version))
 
 	fh, err := os.Create(layerTar)
 	if err != nil {
@@ -520,7 +520,7 @@ func (b *Builder) buildpackLayer(dest string, bp buildpack.Buildpack) (string, e
 		return "", err
 	}
 
-	baseTarDir := path.Join(buildpacksDir, bp.EscapedID(), bp.Version)
+	baseTarDir := path.Join(buildpacksDir, bp.EscapedID(), bp.Info.Version)
 	if err := tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeDir,
 		Name:     baseTarDir,
@@ -530,21 +530,8 @@ func (b *Builder) buildpackLayer(dest string, bp buildpack.Buildpack) (string, e
 		return "", err
 	}
 
-	if filepath.Ext(bp.Path) == ".tgz" {
-		err = b.embedBuildpackTar(tw, bp.Path, baseTarDir)
-	} else {
-		err = archive.WriteDirToTar(
-			tw,
-			bp.Path,
-			baseTarDir,
-			b.UID,
-			b.GID,
-			-1,
-		)
-	}
-
-	if err != nil {
-		return "", errors.Wrapf(err, "creating layer tar for buildpack '%s:%s'", bp.ID, bp.Version)
+	if err := b.embedBuildpackTar(tw, bp, baseTarDir); err != nil {
+		return "", errors.Wrapf(err, "creating layer tar for buildpack '%s:%s'", bp.Info.ID, bp.Info.Version)
 	}
 
 	if lifecycleVersion := b.GetLifecycleVersion(); lifecycleVersion != nil && lifecycleVersion.LessThan(semver.MustParse("0.4.0")) {
@@ -556,30 +543,18 @@ func (b *Builder) buildpackLayer(dest string, bp buildpack.Buildpack) (string, e
 	return layerTar, nil
 }
 
-func (b *Builder) embedBuildpackTar(tw *tar.Writer, srcTar, baseTarDir string) error {
+func (b *Builder) embedBuildpackTar(tw *tar.Writer, bp buildpack.Buildpack, baseTarDir string) error {
 	var (
-		tarFile    *os.File
-		gzipReader *gzip.Reader
-		fhFinal    io.Reader
-		err        error
+		err error
 	)
 
-	tarFile, err = os.Open(srcTar)
-	fhFinal = tarFile
+	rc, err := bp.Read()
 	if err != nil {
-		return errors.Wrapf(err, "failed to open buildpack tar '%s'", srcTar)
+		errors.Wrap(err, "read buildpack blob")
 	}
-	defer tarFile.Close()
+	defer rc.Close()
 
-	gzipReader, err = gzip.NewReader(tarFile)
-	fhFinal = gzipReader
-	if err != nil {
-		return errors.Wrap(err, "failed to create gzip reader")
-	}
-
-	defer gzipReader.Close()
-
-	tr := tar.NewReader(fhFinal)
+	tr := tar.NewReader(rc)
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {

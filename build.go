@@ -231,7 +231,7 @@ func (c *Client) processBuildpacks(buildpacks []string) ([]buildpack.Buildpack, 
 			}
 			bps = append(bps, fetchedBP)
 			group.Group = append(group.Group, builder.BuildpackRef{
-				BuildpackInfo: fetchedBP.BuildpackInfo,
+				BuildpackInfo: fetchedBP.Info,
 			})
 		}
 	}
@@ -274,7 +274,7 @@ func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[s
 	}
 	bldr.SetEnv(env)
 	for _, bp := range buildpacks {
-		c.logger.Debugf("adding buildpack %s version %s to builder", style.Symbol(bp.ID), style.Symbol(bp.Version))
+		c.logger.Debugf("adding buildpack %s version %s to builder", style.Symbol(bp.Info.ID), style.Symbol(bp.Info.Version))
 		bldr.AddBuildpack(bp)
 	}
 	if len(group.Group) > 0 {

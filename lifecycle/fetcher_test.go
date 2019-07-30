@@ -33,7 +33,7 @@ func testFetcher(t *testing.T, when spec.G, it spec.S) {
 		mockController = gomock.NewController(t)
 		mockDownloader = mocks.NewMockDownloader(mockController)
 		subject = lifecycle.NewFetcher(mockDownloader)
-		lifecycleTgz = h.CreateTgz(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
+		lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
 	})
 
 	it.After(func() {

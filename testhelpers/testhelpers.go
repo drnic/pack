@@ -427,7 +427,7 @@ func GetFreePort() (string, error) {
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
 }
 
-func CreateTgz(t *testing.T, srcDir, tarDir string, mode int64) string {
+func CreateTGZ(t *testing.T, srcDir, tarDir string, mode int64) string {
 	t.Helper()
 
 	fh, err := ioutil.TempFile("", "*.tgz")
@@ -437,18 +437,34 @@ func CreateTgz(t *testing.T, srcDir, tarDir string, mode int64) string {
 	gw := gzip.NewWriter(fh)
 	defer gw.Close()
 
-	tw := tar.NewWriter(gw)
+	writeTAR(t, srcDir, tarDir, mode, gw)
+
+	return fh.Name()
+}
+
+func CreateTAR(t *testing.T, srcDir, tarDir string, mode int64) string {
+	t.Helper()
+
+	fh, err := ioutil.TempFile("", "*.tgz")
+	AssertNil(t, err)
+	defer fh.Close()
+
+	writeTAR(t, srcDir, tarDir, mode, fh)
+
+	return fh.Name()
+}
+
+func writeTAR(t *testing.T, srcDir, tarDir string, mode int64, w io.Writer) {
+	tw := tar.NewWriter(w)
 	defer tw.Close()
 
-	err = archive.WriteDirToTar(
+	err := archive.WriteDirToTar(
 		tw,
 		srcDir,
 		tarDir,
 		0, 0, mode,
 	)
 	AssertNil(t, err)
-
-	return fh.Name()
 }
 
 func ListTarContents(tarPath string) ([]tar.Header, error) {

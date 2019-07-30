@@ -39,23 +39,15 @@ func (f *Fetcher) FetchBuildpack(uri string) (Buildpack, error) {
 		return Buildpack{}, errors.Wrap(err, "fetching buildpack")
 	}
 
-	data, err := readTOML(downloadedPath)
+	bp, err := readTOML(downloadedPath)
 	if err != nil {
 		return Buildpack{}, err
 	}
-
-	return Buildpack{
-		BuildpackInfo: BuildpackInfo{
-			ID:      data.Buildpack.ID,
-			Version: data.Buildpack.Version,
-		},
-		Path:   downloadedPath,
-		Order:  data.Order,
-		Stacks: data.Stacks,
-	}, err
+	bp.Blob = Blob{Path: downloadedPath}
+	return bp, nil
 }
 
-func readTOML(path string) (buildpackTOML, error) {
+func readTOML(path string) (Buildpack, error) {
 	var (
 		buf []byte
 		err error
@@ -67,13 +59,13 @@ func readTOML(path string) (buildpackTOML, error) {
 	}
 
 	if err != nil {
-		return buildpackTOML{}, err
+		return Buildpack{}, err
 	}
 
-	bpTOML := buildpackTOML{}
-	_, err = toml.Decode(string(buf), &bpTOML)
+	bp := Buildpack{}
+	_, err = toml.Decode(string(buf), &bp)
 	if err != nil {
-		return buildpackTOML{}, errors.Wrapf(err, "reading buildpack.toml from path %s", path)
+		return Buildpack{}, errors.Wrapf(err, "reading buildpack.toml from path %s", path)
 	}
-	return bpTOML, nil
+	return bp, nil
 }

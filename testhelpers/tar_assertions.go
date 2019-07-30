@@ -20,6 +20,17 @@ func AssertOnTarEntry(t *testing.T, tarFile, entryPath string, assertFns ...TarE
 	}
 }
 
+//func AssertOnTarEntry(t *testing.T, tarFile, entryPath string, assertFns ...TarEntryAssertion) {
+//	t.Helper()
+//
+//	header, bytes, err := archive.ReadTarEntry(tarFile, entryPath)
+//	AssertNil(t, err)
+//
+//	for _, fn := range assertFns {
+//		fn(t, header, bytes)
+//	}
+//}
+
 func ContentEquals(expected string) TarEntryAssertion {
 	return func(t *testing.T, header *tar.Header, contents []byte) {
 		t.Helper()

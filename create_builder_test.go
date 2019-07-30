@@ -72,11 +72,11 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			imageFetcher.RemoteImages["localhost:5000/some-run-image"] = fakeRunImageMirror
 
 			bp := buildpack.Buildpack{
-				BuildpackInfo: buildpack.BuildpackInfo{
+				Info: buildpack.BuildpackInfo{
 					ID:      "bp.one",
 					Version: "1.2.3",
 				},
-				Path:   filepath.Join("testdata", "buildpack"),
+				Blob:   buildpack.Blob{Path: filepath.Join("testdata", "buildpack")},
 				Stacks: []buildpack.Stack{{ID: "some.stack.id"}},
 			}
 

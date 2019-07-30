@@ -55,7 +55,7 @@ func (o Order) ToV1Order() V1Order {
 // as we no longer support older releases that rely on it.
 func symlinkLatest(tw *tar.Writer, baseTarDir string, bp buildpack.Buildpack, metadata Metadata) error {
 	for _, b := range metadata.Buildpacks {
-		if b.ID == bp.ID && b.Version == bp.Version && b.Latest {
+		if b.ID == bp.Info.ID && b.Version == bp.Info.Version && b.Latest {
 			err := tw.WriteHeader(&tar.Header{
 				Name:     fmt.Sprintf("%s/%s/%s", buildpacksDir, bp.EscapedID(), "latest"),
 				Linkname: baseTarDir,
@@ -63,7 +63,7 @@ func symlinkLatest(tw *tar.Writer, baseTarDir string, bp buildpack.Buildpack, me
 				Mode:     0644,
 			})
 			if err != nil {
-				return errors.Wrapf(err, "creating latest symlink for buildpack '%s:%s'", bp.ID, bp.Version)
+				return errors.Wrapf(err, "creating latest symlink for buildpack '%s:%s'", bp.Info.ID, bp.Info.Version)
 			}
 			break
 		}

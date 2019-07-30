@@ -45,7 +45,7 @@ func testDownloader(t *testing.T, when spec.G, it spec.S) {
 			h.RecursiveCopy(t, testDataDir, filepath.Join(tmpDir, testDataDir))
 
 			tgz = filepath.Join(tmpDir, "dirA.tgz")
-			err = os.Rename(h.CreateTgz(t, testDataDir, "./", 0777), tgz)
+			err = os.Rename(h.CreateTGZ(t, testDataDir, "./", 0777), tgz)
 			h.AssertNil(t, err)
 
 			originalWd, err = os.Getwd()

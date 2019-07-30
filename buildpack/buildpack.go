@@ -1,17 +1,19 @@
 package buildpack
 
-import "strings"
-
-type BuildpackTOML struct {
-	Buildpack Buildpack
-	Stacks    []Stack
-}
+import (
+	"strings"
+)
 
 type Buildpack struct {
-	BuildpackInfo
-	Path   string
-	Stacks []Stack
-	Order  Order
+	Info   BuildpackInfo `toml:"buildpack"`
+	Stacks []Stack       `toml:"stacks"`
+	Order  Order         `toml:"order"`
+	Blob   `toml:"-"`
+}
+
+type BuildpackInfo struct {
+	ID      string `toml:"id" json:"id"`
+	Version string `toml:"version" json:"version"`
 }
 
 type Order []Group
@@ -20,17 +22,12 @@ type Group struct {
 	Group []BuildpackInfo
 }
 
-type BuildpackInfo struct {
-	ID      string `toml:"id" json:"id"`
-	Version string `toml:"version" json:"version"`
-}
-
 type Stack struct {
 	ID string
 }
 
 func (b *Buildpack) EscapedID() string {
-	return strings.Replace(b.ID, "/", "_", -1)
+	return strings.Replace(b.Info.ID, "/", "_", -1)
 }
 
 func (b *Buildpack) SupportsStack(stackID string) bool {
