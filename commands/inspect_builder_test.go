@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/buildpack/pack"
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
-	"github.com/buildpack/pack/buildpack"
 	"github.com/buildpack/pack/commands"
 	cmdmocks "github.com/buildpack/pack/commands/mocks"
 	"github.com/buildpack/pack/config"
@@ -136,8 +136,8 @@ ERROR: some local error
 			)
 
 			it.Before(func() {
-				buildpack1Info := buildpack.BuildpackInfo{ID: "test.bp.one", Version: "1.0.0"}
-				buildpack2Info := buildpack.BuildpackInfo{ID: "test.bp.two", Version: "2.0.0"}
+				buildpack1Info := blob.BuildpackInfo{ID: "test.bp.one", Version: "1.0.0"}
+				buildpack2Info := blob.BuildpackInfo{ID: "test.bp.two", Version: "2.0.0"}
 				buildpacks := []builder.BuildpackMetadata{
 					{BuildpackInfo: buildpack1Info, Latest: true},
 					{BuildpackInfo: buildpack2Info, Latest: false},

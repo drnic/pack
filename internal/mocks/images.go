@@ -7,8 +7,8 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil/fakes"
 
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
-	"github.com/buildpack/pack/lifecycle"
 	h "github.com/buildpack/pack/testhelpers"
 )
 
@@ -26,8 +26,8 @@ func NewFakeBuilderImage(t *testing.T, name string, buildpacks []builder.Buildpa
 				Mirrors: config.Stack.RunImageMirrors,
 			},
 		},
-		Lifecycle: lifecycle.Metadata{
-			Version: semver.MustParse(lifecycle.DefaultLifecycleVersion),
+		Lifecycle: blob.Lifecycle{
+			Version: semver.MustParse(blob.DefaultLifecycleVersion),
 		},
 	}
 	label, err := json.Marshal(&metadata)

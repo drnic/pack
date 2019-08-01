@@ -58,7 +58,7 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 	}
 
 	for _, b := range opts.BuilderConfig.Buildpacks {
-		fetchedBuildpack, err := c.buildpackFetcher.FetchBuildpack(b.URI)
+		fetchedBuildpack, err := c.blobFetcher.FetchBuildpack(b.URI)
 		if err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 	builderImage.SetOrder(opts.BuilderConfig.Order)
 	builderImage.SetStackInfo(opts.BuilderConfig.Stack)
 
-	lifecycleMd, err := c.lifecycleFetcher.Fetch(lifecycleVersion, opts.BuilderConfig.Lifecycle.URI)
+	lifecycleMd, err := c.blobFetcher.FetchLifecycle(lifecycleVersion, opts.BuilderConfig.Lifecycle.URI)
 	if err != nil {
 		return errors.Wrap(err, "fetching lifecycle")
 	}

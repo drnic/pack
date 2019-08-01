@@ -2,7 +2,6 @@ package builder
 
 import (
 	"github.com/buildpack/pack/blob"
-	"github.com/buildpack/pack/lifecycle"
 )
 
 const MetadataLabel = "io.buildpacks.builder.metadata"
@@ -12,7 +11,7 @@ type Metadata struct {
 	Buildpacks  []BuildpackMetadata `json:"buildpacks"`
 	Groups      V1Order             `json:"groups"` // deprecated
 	Stack       StackMetadata       `json:"stack"`
-	Lifecycle   lifecycle.Lifecycle `json:"lifecycle"`
+	Lifecycle   blob.Lifecycle      `json:"lifecycle"`
 }
 
 type BuildpackMetadata struct {

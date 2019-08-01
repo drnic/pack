@@ -12,8 +12,8 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
-	"github.com/buildpack/pack/buildpack"
 	"github.com/buildpack/pack/image"
 	m "github.com/buildpack/pack/internal/mocks"
 	"github.com/buildpack/pack/mocks"
@@ -29,7 +29,6 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 	var (
 		subject          *Client
 		mockImageFetcher *mocks.MockImageFetcher
-		mockBPFetcher    *mocks.MockBuildpackFetcher
 		mockController   *gomock.Controller
 		builderImage     *fakes.Image
 		out              bytes.Buffer
@@ -38,12 +37,10 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 	it.Before(func() {
 		mockController = gomock.NewController(t)
 		mockImageFetcher = mocks.NewMockImageFetcher(mockController)
-		mockBPFetcher = mocks.NewMockBuildpackFetcher(mockController)
 
 		subject = &Client{
-			logger:           m.NewMockLogger(&out),
-			imageFetcher:     mockImageFetcher,
-			buildpackFetcher: mockBPFetcher,
+			logger:       m.NewMockLogger(&out),
+			imageFetcher: mockImageFetcher,
 		}
 
 		builderImage = fakes.NewImage("some/builder", "", "")
@@ -130,7 +127,7 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 						builderInfo, err := subject.InspectBuilder("some/builder", useDaemon)
 						h.AssertNil(t, err)
 						h.AssertEq(t, builderInfo.Buildpacks[0], builder.BuildpackMetadata{
-							BuildpackInfo: buildpack.BuildpackInfo{
+							BuildpackInfo: blob.BuildpackInfo{
 								ID:      "test.bp.one",
 								Version: "1.0.0",
 							},
@@ -142,7 +139,7 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 						builderInfo, err := subject.InspectBuilder("some/builder", useDaemon)
 						h.AssertNil(t, err)
 						h.AssertEq(t, builderInfo.Groups[0].Group[0], builder.BuildpackRef{
-							BuildpackInfo: buildpack.BuildpackInfo{
+							BuildpackInfo: blob.BuildpackInfo{
 								ID:      "test.bp.one",
 								Version: "1.0.0",
 							},

@@ -17,13 +17,11 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
-	"github.com/buildpack/pack/buildpack"
 	"github.com/buildpack/pack/logging"
 
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
 	imocks "github.com/buildpack/pack/internal/mocks"
-	"github.com/buildpack/pack/lifecycle"
 	"github.com/buildpack/pack/mocks"
 	h "github.com/buildpack/pack/testhelpers"
 )
@@ -37,24 +35,22 @@ func TestCreateBuilder(t *testing.T) {
 func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	when("#CreateBuilder", func() {
 		var (
-			mockController       *gomock.Controller
-			mockBPFetcher        *mocks.MockBuildpackFetcher
-			mockLifecycleFetcher *mocks.MockLifecycleFetcher
-			imageFetcher         *imocks.FakeImageFetcher
-			fakeBuildImage       *fakes.Image
-			fakeRunImage         *fakes.Image
-			fakeRunImageMirror   *fakes.Image
-			opts                 CreateBuilderOptions
-			subject              *Client
-			log                  logging.Logger
-			out                  bytes.Buffer
+			mockController     *gomock.Controller
+			mockBlobFetcher    *mocks.MockBlobFetcher
+			imageFetcher       *imocks.FakeImageFetcher
+			fakeBuildImage     *fakes.Image
+			fakeRunImage       *fakes.Image
+			fakeRunImageMirror *fakes.Image
+			opts               CreateBuilderOptions
+			subject            *Client
+			log                logging.Logger
+			out                bytes.Buffer
 		)
 
 		it.Before(func() {
 			log = imocks.NewMockLogger(&out)
 			mockController = gomock.NewController(t)
-			mockBPFetcher = mocks.NewMockBuildpackFetcher(mockController)
-			mockLifecycleFetcher = mocks.NewMockLifecycleFetcher(mockController)
+			mockBlobFetcher = mocks.NewMockBlobFetcher(mockController)
 
 			fakeBuildImage = fakes.NewImage("some/build-image", "", "")
 			h.AssertNil(t, fakeBuildImage.SetLabel("io.buildpacks.stack.id", "some.stack.id"))
@@ -81,19 +77,18 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 				Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 			}
 
-			mockBPFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
+			mockBlobFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
 
-			mockLifecycleFetcher.EXPECT().Fetch(gomock.Any(), gomock.Any()).
-				Return(lifecycle.Lifecycle{
-					Path:    filepath.Join("testdata", "lifecycle.tgz"),
+			mockBlobFetcher.EXPECT().FetchLifecycle(gomock.Any(), gomock.Any()).
+				Return(blob.Lifecycle{
+					Blob:    blob.Blob{Path: filepath.Join("testdata", "lifecycle.tgz")},
 					Version: semver.MustParse("3.4.5"),
 				}, nil).AnyTimes()
 
 			subject = &Client{
-				logger:           log,
-				imageFetcher:     imageFetcher,
-				buildpackFetcher: mockBPFetcher,
-				lifecycleFetcher: mockLifecycleFetcher,
+				logger:       log,
+				imageFetcher: imageFetcher,
+				blobFetcher:  mockBlobFetcher,
 			}
 
 			opts = CreateBuilderOptions{
@@ -102,13 +97,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					Description: "Some description",
 					Buildpacks: []builder.BuildpackConfig{
 						{
-							BuildpackInfo: buildpack.BuildpackInfo{ID: "bp.one", Version: "1.2.3"},
+							BuildpackInfo: blob.BuildpackInfo{ID: "bp.one", Version: "1.2.3"},
 							URI:           "https://example.fake/bp-one.tgz",
 						},
 					},
 					Order: []builder.OrderEntry{{
 						Group: []builder.BuildpackRef{
-							{BuildpackInfo: buildpack.BuildpackInfo{ID: "bp.one", Version: "1.2.3"}, Optional: false},
+							{BuildpackInfo: blob.BuildpackInfo{ID: "bp.one", Version: "1.2.3"}, Optional: false},
 						}},
 					},
 					Stack: builder.StackConfig{
@@ -223,7 +218,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			h.AssertEq(t, builderImage.UID, 1234)
 			h.AssertEq(t, builderImage.GID, 4321)
 			h.AssertEq(t, builderImage.StackID, "some.stack.id")
-			bpInfo := buildpack.BuildpackInfo{
+			bpInfo := blob.BuildpackInfo{
 				ID:      "bp.one",
 				Version: "1.2.3",
 			}

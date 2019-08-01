@@ -225,7 +225,7 @@ func (c *Client) processBuildpacks(buildpacks []string) ([]blob.Buildpack, build
 				return nil, builder.OrderEntry{}, fmt.Errorf("buildpack %s: Windows only supports .tgz-based buildpacks", style.Symbol(bp))
 			}
 			c.logger.Debugf("fetching buildpack from %s", style.Symbol(bp))
-			fetchedBP, err := c.buildpackFetcher.FetchBuildpack(bp)
+			fetchedBP, err := c.blobFetcher.FetchBuildpack(bp)
 			if err != nil {
 				return nil, builder.OrderEntry{}, errors.Wrapf(err, "failed to fetch buildpack from URI '%s'", bp)
 			}

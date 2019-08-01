@@ -15,7 +15,7 @@ type Blob struct {
 	Path string
 }
 
-func (b *Blob) Read() (io.ReadCloser, error) {
+func (b *Blob) Open() (io.ReadCloser, error) {
 	fi, err := os.Stat(b.Path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read blob at path '%s'", b.Path)

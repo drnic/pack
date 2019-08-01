@@ -455,6 +455,7 @@ func CreateTAR(t *testing.T, srcDir, tarDir string, mode int64) string {
 }
 
 func writeTAR(t *testing.T, srcDir, tarDir string, mode int64, w io.Writer) {
+	t.Helper()
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 

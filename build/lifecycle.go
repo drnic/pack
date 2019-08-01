@@ -11,9 +11,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
 	"github.com/buildpack/pack/cache"
-	"github.com/buildpack/pack/lifecycle"
 	"github.com/buildpack/pack/logging"
 	"github.com/buildpack/pack/style"
 )
@@ -80,7 +80,7 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 	lifecycleVersion := l.builder.GetLifecycleVersion()
 	if lifecycleVersion == nil {
 		l.logger.Debug("Warning: lifecycle version unknown")
-		lifecycleVersion = semver.MustParse(lifecycle.DefaultLifecycleVersion)
+		lifecycleVersion = semver.MustParse(blob.DefaultLifecycleVersion)
 	} else {
 		l.logger.Debugf("Executing lifecycle version %s", style.Symbol(lifecycleVersion.String()))
 	}

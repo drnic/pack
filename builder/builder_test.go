@@ -18,7 +18,6 @@ import (
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
 	"github.com/buildpack/pack/internal/archive"
-	"github.com/buildpack/pack/lifecycle"
 	h "github.com/buildpack/pack/testhelpers"
 )
 
@@ -471,9 +470,9 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			it.Before(func() {
 				lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
 
-				h.AssertNil(t, subject.SetLifecycle(lifecycle.Lifecycle{
+				h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
 					Version: semver.MustParse("1.2.3"),
-					Path:    lifecycleTgz,
+					Blob:    blob.Blob{Path: lifecycleTgz},
 				}))
 				h.AssertNil(t, subject.Save())
 				h.AssertEq(t, baseImage.IsSaved(), true)
@@ -689,9 +688,9 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 				it.Before(func() {
 					lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
 
-					h.AssertNil(t, subject.SetLifecycle(lifecycle.Lifecycle{
+					h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
 						Version: semver.MustParse("0.3.9"),
-						Path:    lifecycleTgz,
+						Blob:    blob.Blob{Path: lifecycleTgz},
 					}))
 
 					h.AssertNil(t, subject.Save())
@@ -718,9 +717,9 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 				it.Before(func() {
 					lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
 
-					h.AssertNil(t, subject.SetLifecycle(lifecycle.Lifecycle{
+					h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
 						Version: semver.MustParse("0.4.0"),
-						Path:    lifecycleTgz,
+						Blob:    blob.Blob{Path: lifecycleTgz},
 					}))
 
 					h.AssertNil(t, subject.Save())

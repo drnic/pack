@@ -24,7 +24,6 @@ import (
 
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
-	"github.com/buildpack/pack/buildpack"
 	"github.com/buildpack/pack/internal/mocks"
 	h "github.com/buildpack/pack/testhelpers"
 )
@@ -59,7 +58,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 			builderName,
 			[]builder.BuildpackMetadata{
 				{
-					BuildpackInfo: buildpack.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"},
+					BuildpackInfo: blob.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"},
 					Latest:        true,
 				},
 			},
@@ -97,11 +96,11 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 		logger := mocks.NewMockLogger(&outBuf)
 
 		subject = &Client{
-			logger:           logger,
-			imageFetcher:     fakeImageFetcher,
-			buildpackFetcher: blob.NewFetcher(NewDownloader(logger, tmpDir)),
-			lifecycle:        fakeLifecycle,
-			docker:           docker,
+			logger:       logger,
+			imageFetcher: fakeImageFetcher,
+			blobFetcher:  blob.NewFetcher(NewDownloader(logger, tmpDir)),
+			lifecycle:    fakeLifecycle,
+			docker:       docker,
 		}
 	})
 
@@ -496,7 +495,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 				h.AssertNil(t, err)
 				h.AssertEq(t, bldr.GetOrder(), builder.Order{
 					{Group: []builder.BuildpackRef{{
-						BuildpackInfo: buildpack.BuildpackInfo{
+						BuildpackInfo: blob.BuildpackInfo{
 							ID:      "buildpack.id",
 							Version: "buildpack.version",
 						}},
@@ -517,7 +516,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 					h.AssertNil(t, err)
 					h.AssertEq(t, bldr.GetOrder(), builder.Order{
 						{Group: []builder.BuildpackRef{{
-							BuildpackInfo: buildpack.BuildpackInfo{
+							BuildpackInfo: blob.BuildpackInfo{
 								ID:      "buildpack.id",
 								Version: "buildpack.version",
 							}},
@@ -539,7 +538,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 					h.AssertNil(t, err)
 					h.AssertEq(t, bldr.GetOrder(), builder.Order{
 						{Group: []builder.BuildpackRef{{
-							BuildpackInfo: buildpack.BuildpackInfo{
+							BuildpackInfo: blob.BuildpackInfo{
 								ID:      "buildpack.id",
 								Version: "buildpack.version",
 							}},
@@ -607,20 +606,20 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 						h.AssertNil(t, err)
 						h.AssertEq(t, bldr.GetOrder(), builder.Order{
 							{Group: []builder.BuildpackRef{
-								{BuildpackInfo: buildpack.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}},
-								{BuildpackInfo: buildpack.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}},
+								{BuildpackInfo: blob.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}},
+								{BuildpackInfo: blob.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}},
 							}},
 						})
 						h.AssertEq(t, bldr.GetBuildpacks(), []builder.BuildpackMetadata{
 							{
-								BuildpackInfo: buildpack.BuildpackInfo{
+								BuildpackInfo: blob.BuildpackInfo{
 									ID:      "buildpack.id",
 									Version: "buildpack.version",
 								},
 								Latest: true,
 							},
 							{
-								BuildpackInfo: buildpack.BuildpackInfo{
+								BuildpackInfo: blob.BuildpackInfo{
 									ID:      "some-other-buildpack-id",
 									Version: "some-other-buildpack-version",
 								},
@@ -651,9 +650,9 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 						h.AssertEq(t, fakeLifecycle.Opts.Builder.Name(), defaultBuilderImage.Name())
 						bldr, err := builder.GetBuilder(defaultBuilderImage)
 						h.AssertNil(t, err)
-						buildpackInfo := buildpack.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}
-						dirBuildpackInfo := buildpack.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}
-						tgzBuildpackInfo := buildpack.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}
+						buildpackInfo := blob.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}
+						dirBuildpackInfo := blob.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}
+						tgzBuildpackInfo := blob.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}
 						h.AssertEq(t, bldr.GetOrder(), builder.Order{
 							{Group: []builder.BuildpackRef{
 								{BuildpackInfo: buildpackInfo},
@@ -702,15 +701,15 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 						h.AssertNil(t, err)
 						h.AssertEq(t, bldr.GetOrder(), builder.Order{
 							{Group: []builder.BuildpackRef{
-								{BuildpackInfo: buildpack.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}},
-								{BuildpackInfo: buildpack.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}},
-								{BuildpackInfo: buildpack.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}},
+								{BuildpackInfo: blob.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}},
+								{BuildpackInfo: blob.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}},
+								{BuildpackInfo: blob.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}},
 							}},
 						})
 						h.AssertEq(t, bldr.GetBuildpacks(), []builder.BuildpackMetadata{
-							{BuildpackInfo: buildpack.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}, Latest: true},
-							{BuildpackInfo: buildpack.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}, Latest: true},
-							{BuildpackInfo: buildpack.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}, Latest: true},
+							{BuildpackInfo: blob.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}, Latest: true},
+							{BuildpackInfo: blob.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}, Latest: true},
+							{BuildpackInfo: blob.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}, Latest: true},
 						})
 					})
 				})

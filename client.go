@@ -11,17 +11,15 @@ import (
 	"github.com/buildpack/pack/build"
 	"github.com/buildpack/pack/config"
 	"github.com/buildpack/pack/image"
-	"github.com/buildpack/pack/lifecycle"
 	"github.com/buildpack/pack/logging"
 )
 
 type Client struct {
-	logger           logging.Logger
-	imageFetcher     ImageFetcher
-	buildpackFetcher BuildpackFetcher
-	lifecycleFetcher LifecycleFetcher
-	lifecycle        Lifecycle
-	docker           *dockerClient.Client
+	logger       logging.Logger
+	imageFetcher ImageFetcher
+	blobFetcher  BlobFetcher
+	lifecycle    Lifecycle
+	docker       *dockerClient.Client
 }
 
 type ClientOption func(c *Client)
@@ -65,8 +63,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	}
 	downloader := NewDownloader(client.logger, filepath.Join(packHome, "download-cache"))
 	client.imageFetcher = image.NewFetcher(client.logger, client.docker)
-	client.buildpackFetcher = blob.NewFetcher(downloader)
-	client.lifecycleFetcher = lifecycle.NewFetcher(downloader)
+	client.blobFetcher = blob.NewFetcher(downloader)
 	client.lifecycle = build.NewLifecycle(client.docker, client.logger)
 
 	return &client, nil
