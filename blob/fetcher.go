@@ -2,14 +2,9 @@ package blob
 
 import (
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
-
-	"github.com/buildpack/pack/internal/archive"
 )
 
 const (
@@ -35,34 +30,11 @@ func (f *Fetcher) FetchBuildpack(uri string) (Buildpack, error) {
 		return Buildpack{}, errors.Wrap(err, "fetching buildpack")
 	}
 
-	bp, err := readBuildpackTOML(downloadedPath)
+	bp, err := NewBuildpack(downloadedPath)
 	if err != nil {
 		return Buildpack{}, err
 	}
 	bp.Blob = Blob{Path: downloadedPath}
-	return bp, nil
-}
-
-func readBuildpackTOML(path string) (Buildpack, error) {
-	var (
-		buf []byte
-		err error
-	)
-	if filepath.Ext(path) == ".tgz" {
-		_, buf, err = archive.ReadTarEntry(path, "./buildpack.toml", "buildpack.toml", "/buildpack.toml")
-	} else {
-		buf, err = ioutil.ReadFile(filepath.Join(path, "buildpack.toml"))
-	}
-
-	if err != nil {
-		return Buildpack{}, err
-	}
-
-	bp := Buildpack{}
-	_, err = toml.Decode(string(buf), &bp)
-	if err != nil {
-		return Buildpack{}, errors.Wrapf(err, "reading buildpack.toml from path %s", path)
-	}
 	return bp, nil
 }
 
@@ -82,15 +54,7 @@ func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (Lifecycle
 
 	lifecycle := Lifecycle{Version: version, Blob: Blob{Path: path}}
 
-	if err = lifecycle.validate(
-		"detector",
-		"restorer",
-		"analyzer",
-		"builder",
-		"exporter",
-		"cacher",
-		"launcher",
-	); err != nil {
+	if err = lifecycle.validate(); err != nil {
 		return Lifecycle{}, errors.Wrapf(err, "invalid lifecycle")
 	}
 

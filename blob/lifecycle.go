@@ -16,7 +16,17 @@ type Lifecycle struct {
 	Blob
 }
 
-func (l *Lifecycle) validate(entryPath ...string) error {
+var lifeccycleBinaries = []string{
+	"detector",
+	"restorer",
+	"analyzer",
+	"builder",
+	"exporter",
+	"cacher",
+	"launcher",
+}
+
+func (l *Lifecycle) validate() error {
 	rc, err := l.Open()
 	if err != nil {
 		return errors.Wrap(err, "create lifecycle blob reader")
@@ -40,7 +50,7 @@ func (l *Lifecycle) validate(entryPath ...string) error {
 		}
 	}
 
-	for _, p := range entryPath {
+	for _, p := range lifeccycleBinaries {
 		_, found := headers[p]
 		if !found {
 			return fmt.Errorf("did not find '%s' in tar", p)
