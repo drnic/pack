@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil/fakes"
 	"github.com/fatih/color"
 	"github.com/golang/mock/gomock"
@@ -68,21 +67,20 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			imageFetcher.LocalImages["some/run-image"] = fakeRunImage
 			imageFetcher.RemoteImages["localhost:5000/some-run-image"] = fakeRunImageMirror
 
-			bp := blob.Buildpack{
-				Info: blob.BuildpackInfo{
+			bp := builder.Buildpack{
+				Info: builder.BuildpackInfo{
 					ID:      "bp.one",
 					Version: "1.2.3",
 				},
-				Stacks: []blob.Stack{{ID: "some.stack.id"}},
+				Stacks: []builder.Stack{{ID: "some.stack.id"}},
 				Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 			}
 
 			mockBlobFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
 
 			mockBlobFetcher.EXPECT().FetchLifecycle(gomock.Any(), gomock.Any()).
-				Return(blob.Lifecycle{
-					Blob:    &blob.Blob{Path: filepath.Join("testdata", "lifecycle.tgz")},
-					Version: semver.MustParse("3.4.5"),
+				Return(builder.Lifecycle{
+					Blob: &blob.Blob{Path: filepath.Join("testdata", "lifecycle.tgz")},
 				}, nil).AnyTimes()
 
 			subject = &Client{
@@ -97,13 +95,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					Description: "Some description",
 					Buildpacks: []builder.BuildpackConfig{
 						{
-							BuildpackInfo: blob.BuildpackInfo{ID: "bp.one", Version: "1.2.3"},
+							BuildpackInfo: builder.BuildpackInfo{ID: "bp.one", Version: "1.2.3"},
 							URI:           "https://example.fake/bp-one.tgz",
 						},
 					},
 					Order: []builder.OrderEntry{{
 						Group: []builder.BuildpackRef{
-							{BuildpackInfo: blob.BuildpackInfo{ID: "bp.one", Version: "1.2.3"}, Optional: false},
+							{BuildpackInfo: builder.BuildpackInfo{ID: "bp.one", Version: "1.2.3"}, Optional: false},
 						}},
 					},
 					Stack: builder.StackConfig{
@@ -218,7 +216,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			h.AssertEq(t, builderImage.UID, 1234)
 			h.AssertEq(t, builderImage.GID, 4321)
 			h.AssertEq(t, builderImage.StackID, "some.stack.id")
-			bpInfo := blob.BuildpackInfo{
+			bpInfo := builder.BuildpackInfo{
 				ID:      "bp.one",
 				Version: "1.2.3",
 			}

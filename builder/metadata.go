@@ -1,9 +1,5 @@
 package builder
 
-import (
-	"github.com/buildpack/pack/blob"
-)
-
 const MetadataLabel = "io.buildpacks.builder.metadata"
 
 type Metadata struct {
@@ -11,12 +7,17 @@ type Metadata struct {
 	Buildpacks  []BuildpackMetadata `json:"buildpacks"`
 	Groups      V1Order             `json:"groups"` // deprecated
 	Stack       StackMetadata       `json:"stack"`
-	Lifecycle   blob.Lifecycle      `json:"lifecycle"`
+	Lifecycle   LifecycleMetadata   `json:"lifecycle"`
 }
 
 type BuildpackMetadata struct {
-	blob.BuildpackInfo
+	BuildpackInfo
 	Latest bool `json:"latest"` // deprecated
+}
+
+type LifecycleMetadata struct {
+	LifecycleInfo
+	API LifecycleAPI
 }
 
 type StackMetadata struct {
@@ -30,7 +31,7 @@ type RunImageMetadata struct {
 
 func processMetadata(md *Metadata) error {
 	for i, bp := range md.Buildpacks {
-		var matchingBps []blob.BuildpackInfo
+		var matchingBps []BuildpackInfo
 		for _, bp2 := range md.Buildpacks {
 			if bp.ID == bp2.ID {
 				matchingBps = append(matchingBps, bp.BuildpackInfo)

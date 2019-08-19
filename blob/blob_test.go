@@ -1,4 +1,4 @@
-package blob
+package blob_test
 
 import (
 	"archive/tar"
@@ -10,6 +10,8 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
+	"github.com/buildpack/pack/blob"
+	"github.com/buildpack/pack/builder"
 	h "github.com/buildpack/pack/testhelpers"
 )
 
@@ -30,7 +32,7 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 					blobPath = blobDir
 				})
 				it("returns a tar reader", func() {
-					testBlobOpen(t, &Blob{Path: blobPath})
+					testBlobOpen(t, &blob.Blob{Path: blobPath})
 				})
 			})
 
@@ -43,7 +45,7 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 					h.AssertNil(t, os.Remove(blobPath))
 				})
 				it("returns a tar reader", func() {
-					testBlobOpen(t, &Blob{Path: blobPath})
+					testBlobOpen(t, &blob.Blob{Path: blobPath})
 				})
 			})
 
@@ -56,14 +58,14 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 					h.AssertNil(t, os.Remove(blobPath))
 				})
 				it("returns a tar reader", func() {
-					testBlobOpen(t, &Blob{Path: blobPath})
+					testBlobOpen(t, &blob.Blob{Path: blobPath})
 				})
 			})
 		})
 	})
 }
 
-func testBlobOpen(t *testing.T, blob *Blob) {
+func testBlobOpen(t *testing.T, blob builder.Blob) {
 	rc, err := blob.Open()
 	h.AssertNil(t, err)
 	defer rc.Close()

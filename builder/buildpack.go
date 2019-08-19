@@ -1,4 +1,4 @@
-package blob
+package builder
 
 import (
 	"strings"
@@ -13,7 +13,7 @@ type Buildpack struct {
 	Info   BuildpackInfo `toml:"buildpack"`
 	Stacks []Stack       `toml:"stacks"`
 	Order  Order         `toml:"order"`
-	*Blob  `toml:"-"`
+	Blob   `toml:"-"`
 }
 
 type BuildpackInfo struct {
@@ -21,27 +21,21 @@ type BuildpackInfo struct {
 	Version string `toml:"version" json:"version"`
 }
 
-type Order []Group
-
-type Group struct {
-	Group []BuildpackInfo
-}
-
 type Stack struct {
 	ID string
 }
 
-func NewBuildpack(blob *Blob) (Buildpack, error) {
-	bp := Buildpack{Blob: blob}
+func NewBuildpack(blob Blob) (*Buildpack, error) {
+	bp := &Buildpack{Blob: blob}
 	rc, err := blob.Open()
 	if err != nil {
-		return Buildpack{}, errors.Wrap(err, "open buildpack")
+		return nil, errors.Wrap(err, "open buildpack")
 	}
 	defer rc.Close()
 	_, buf, err := archive.ReadTarEntry(rc, "buildpack.toml")
 	_, err = toml.Decode(string(buf), &bp)
 	if err != nil {
-		return Buildpack{}, errors.Wrapf(err, "reading buildpack.toml from buildpack at path %s", blob.Path)
+		return nil, errors.Wrapf(err, "reading buildpack.toml")
 	}
 	return bp, nil
 }

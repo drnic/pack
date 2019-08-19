@@ -14,7 +14,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 
-	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/build"
 	"github.com/buildpack/pack/builder"
 	"github.com/buildpack/pack/internal/archive"
@@ -209,14 +208,14 @@ func (c *Client) processProxyConfig(config *ProxyConfig) ProxyConfig {
 	}
 }
 
-func (c *Client) processBuildpacks(buildpacks []string) ([]blob.Buildpack, builder.OrderEntry, error) {
+func (c *Client) processBuildpacks(buildpacks []string) ([]*builder.Buildpack, builder.OrderEntry, error) {
 	group := builder.OrderEntry{Group: []builder.BuildpackRef{}}
-	var bps []blob.Buildpack
+	var bps []*builder.Buildpack
 	for _, bp := range buildpacks {
 		if isBuildpackId(bp) {
 			id, version := c.parseBuildpack(bp)
 			group.Group = append(group.Group, builder.BuildpackRef{
-				BuildpackInfo: blob.BuildpackInfo{
+				BuildpackInfo: builder.BuildpackInfo{
 					ID:      id,
 					Version: version,
 				},
@@ -262,7 +261,7 @@ func (c *Client) parseBuildpack(bp string) (string, string) {
 	return parts[0], ""
 }
 
-func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[string]string, group builder.OrderEntry, buildpacks []blob.Buildpack) (*builder.Builder, error) {
+func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[string]string, group builder.OrderEntry, buildpacks []*builder.Buildpack) (*builder.Builder, error) {
 	origBuilderName := rawBuilderImage.Name()
 	bldr, err := builder.New(rawBuilderImage, fmt.Sprintf("pack.local/builder/%x:latest", randString(10)))
 	if err != nil {

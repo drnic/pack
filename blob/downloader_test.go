@@ -1,4 +1,4 @@
-package blob
+package blob_test
 
 import (
 	"crypto/sha256"
@@ -13,6 +13,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/internal/paths"
 	"github.com/buildpack/pack/logging"
 	h "github.com/buildpack/pack/testhelpers"
@@ -27,13 +28,13 @@ func testDownloader(t *testing.T, when spec.G, it spec.S) {
 		var (
 			cacheDir string
 			err      error
-			subject  Downloader
+			subject  blob.Downloader
 		)
 
 		it.Before(func() {
 			cacheDir, err = ioutil.TempDir("", "cache")
 			h.AssertNil(t, err)
-			subject = NewDownloader(logging.New(ioutil.Discard), cacheDir)
+			subject = blob.NewDownloader(logging.New(ioutil.Discard), cacheDir)
 		})
 
 		it.After(func() {
@@ -103,7 +104,7 @@ func testDownloader(t *testing.T, when spec.G, it spec.S) {
 				})
 
 				expectedCachePath = filepath.Join(cacheDir,
-					cacheDirPrefix+cacheVersion,
+					"c2",
 					fmt.Sprintf("%x", sha256.Sum256([]byte(uri))),
 				)
 			})

@@ -12,7 +12,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
-	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
 	"github.com/buildpack/pack/image"
 	m "github.com/buildpack/pack/internal/mocks"
@@ -127,7 +126,7 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 						builderInfo, err := subject.InspectBuilder("some/builder", useDaemon)
 						h.AssertNil(t, err)
 						h.AssertEq(t, builderInfo.Buildpacks[0], builder.BuildpackMetadata{
-							BuildpackInfo: blob.BuildpackInfo{
+							BuildpackInfo: builder.BuildpackInfo{
 								ID:      "test.bp.one",
 								Version: "1.0.0",
 							},
@@ -139,7 +138,7 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 						builderInfo, err := subject.InspectBuilder("some/builder", useDaemon)
 						h.AssertNil(t, err)
 						h.AssertEq(t, builderInfo.Groups[0].Group[0], builder.BuildpackRef{
-							BuildpackInfo: blob.BuildpackInfo{
+							BuildpackInfo: builder.BuildpackInfo{
 								ID:      "test.bp.one",
 								Version: "1.0.0",
 							},

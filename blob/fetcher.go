@@ -1,8 +1,12 @@
 package blob
 
 import (
+	"fmt"
+
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
+
+	"github.com/buildpack/pack/builder"
 )
 
 const (
@@ -22,20 +26,28 @@ func NewFetcher(downloader Downloader) *Fetcher {
 	return &Fetcher{downloader: downloader}
 }
 
-func (f *Fetcher) FetchBuildpack(uri string) (Buildpack, error) {
+func (f *Fetcher) FetchBuildpack(uri string) (*builder.Buildpack, error) {
 	blob, err := f.downloader.Download(uri)
 	if err != nil {
-		return Buildpack{}, errors.Wrap(err, "fetching buildpack")
+		return nil, errors.Wrap(err, "fetching buildpack")
 	}
 
-	bp, err := NewBuildpack(blob)
+	bp, err := builder.NewBuildpack(blob)
 	if err != nil {
-		return Buildpack{}, err
+		return nil, err
 	}
 	return bp, nil
 }
 
-func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (Lifecycle, error) {
+func uriFromLifecycleVersion(version *semver.Version) string {
+	if version == nil {
+		version = semver.MustParse(DefaultLifecycleVersion)
+	}
+
+	return fmt.Sprintf("https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", version.String(), version.String())
+}
+
+func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (*builder.Lifecycle, error) {
 	if uri == "" && version == nil {
 		version = semver.MustParse(DefaultLifecycleVersion)
 	}
@@ -45,13 +57,16 @@ func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (Lifecycle
 
 	blob, err := f.downloader.Download(uri)
 	if err != nil {
-		return Lifecycle{}, errors.Wrapf(err, "retrieving lifecycle from %s", uri)
+		return nil, errors.Wrapf(err, "retrieving lifecycle from %s", uri)
 	}
 
-	lifecycle := Lifecycle{Version: version, Blob: blob}
+	lifecycle, err := builder.NewLifecycle(blob)
+	if err != nil {
+		return nil, err
+	}
 
-	if err = lifecycle.validate(); err != nil {
-		return Lifecycle{}, errors.Wrapf(err, "invalid lifecycle")
+	if err = lifecycle.Validate(version); err != nil {
+		return nil, errors.Wrapf(err, "invalid lifecycle")
 	}
 
 	return lifecycle, nil

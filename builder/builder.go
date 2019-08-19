@@ -3,7 +3,6 @@ package builder
 import (
 	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +19,6 @@ import (
 	"github.com/buildpack/imgutil"
 	"github.com/pkg/errors"
 
-	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/internal/archive"
 	"github.com/buildpack/pack/style"
 )
@@ -38,8 +36,9 @@ const (
 
 type Builder struct {
 	image                imgutil.Image
+	lifecycle            *Lifecycle
 	lifecyclePath        string
-	additionalBuildpacks []blob.Buildpack
+	additionalBuildpacks []Buildpack
 	metadata             Metadata
 	env                  map[string]string
 	UID, GID             int
@@ -59,7 +58,7 @@ type OrderEntry struct {
 }
 
 type BuildpackRef struct {
-	blob.BuildpackInfo
+	BuildpackInfo
 	Optional bool `toml:"optional,omitempty"`
 }
 
@@ -143,7 +142,8 @@ func (b *Builder) Description() string {
 }
 
 func (b *Builder) GetLifecycleVersion() *semver.Version {
-	return b.metadata.Lifecycle.Version
+	//TODO: fix me
+	return semver.MustParse(b.metadata.Lifecycle.Version)
 }
 
 func (b *Builder) GetBuildpacks() []BuildpackMetadata {
@@ -162,16 +162,15 @@ func (b *Builder) GetStackInfo() StackMetadata {
 	return b.metadata.Stack
 }
 
-func (b *Builder) AddBuildpack(bp blob.Buildpack) {
-	b.additionalBuildpacks = append(b.additionalBuildpacks, bp)
+func (b *Builder) AddBuildpack(bp *Buildpack) {
+	b.additionalBuildpacks = append(b.additionalBuildpacks, *bp)
 	b.metadata.Buildpacks = append(b.metadata.Buildpacks, BuildpackMetadata{
 		BuildpackInfo: bp.Info,
 	})
 }
 
-func (b *Builder) SetLifecycle(lifecycle blob.Lifecycle) error {
-	b.metadata.Lifecycle.Version = lifecycle.Version
-	b.lifecyclePath = lifecycle.Blob.Path
+func (b *Builder) SetLifecycle(lifecycle *Lifecycle) error {
+	b.lifecycle = lifecycle
 	return nil
 }
 
@@ -233,7 +232,8 @@ func (b *Builder) Save() error {
 		return errors.Wrap(err, "adding env layer")
 	}
 
-	if b.lifecyclePath != "" {
+	if b.lifecycle != nil {
+		b.metadata.Lifecycle.Version = b.lifecycle.Descriptor().Info.Version
 		lifecycleTar, err := b.lifecycleLayer(tmpDir)
 		if err != nil {
 			return err
@@ -293,7 +293,7 @@ func processOrder(buildpacks []BuildpackMetadata, order *Order) error {
 		for i := range g.Group {
 			bpRef := &g.Group[i]
 
-			var matchingBps []blob.BuildpackInfo
+			var matchingBps []BuildpackInfo
 			for _, bp := range buildpacks {
 				if bpRef.ID == bp.ID {
 					matchingBps = append(matchingBps, bp.BuildpackInfo)
@@ -321,7 +321,7 @@ func processOrder(buildpacks []BuildpackMetadata, order *Order) error {
 	return nil
 }
 
-func hasBuildpackWithVersion(bps []blob.BuildpackInfo, version string) bool {
+func hasBuildpackWithVersion(bps []BuildpackInfo, version string) bool {
 	for _, bp := range bps {
 		if bp.Version == version {
 			return true
@@ -331,7 +331,7 @@ func hasBuildpackWithVersion(bps []blob.BuildpackInfo, version string) bool {
 }
 
 // TODO: error out when using incompatible lifecycle and buildpacks
-func validateBuildpacks(stackID string, bps []blob.Buildpack) error {
+func validateBuildpacks(stackID string, bps []Buildpack) error {
 	bpLookup := map[string]interface{}{}
 
 	for _, bp := range bps {
@@ -496,7 +496,7 @@ func (b *Builder) stackLayer(dest string) (string, error) {
 // layer tar = {ID}.{V}.tar
 //
 // inside the layer = /buildpacks/{ID}/{V}/*
-func (b *Builder) buildpackLayer(dest string, bp blob.Buildpack) (string, error) {
+func (b *Builder) buildpackLayer(dest string, bp Buildpack) (string, error) {
 	layerTar := filepath.Join(dest, fmt.Sprintf("%s.%s.tar", bp.EscapedID(), bp.Info.Version))
 
 	fh, err := os.Create(layerTar)
@@ -542,7 +542,7 @@ func (b *Builder) buildpackLayer(dest string, bp blob.Buildpack) (string, error)
 	return layerTar, nil
 }
 
-func (b *Builder) embedBuildpackTar(tw *tar.Writer, bp blob.Buildpack, baseTarDir string) error {
+func (b *Builder) embedBuildpackTar(tw *tar.Writer, bp Buildpack, baseTarDir string) error {
 	var (
 		err error
 	)
@@ -590,31 +590,15 @@ func (b *Builder) embedBuildpackTar(tw *tar.Writer, bp blob.Buildpack, baseTarDi
 	return nil
 }
 
-func (b *Builder) embedLifecycleTar(tw *tar.Writer, srcTar string) error {
-	var (
-		tarFile    *os.File
-		gzipReader *gzip.Reader
-		fhFinal    io.Reader
-		err        error
-		regex      = regexp.MustCompile(`^[^/]+/([^/]+)$`)
-	)
+func (b *Builder) embedLifecycleTar(tw *tar.Writer) error {
+	var regex = regexp.MustCompile(`^[^/]+/([^/]+)$`)
 
-	tarFile, err = os.Open(srcTar)
-	fhFinal = tarFile
+	lr, err := b.lifecycle.Open()
 	if err != nil {
-		return errors.Wrapf(err, "failed to open lifecycle tar '%s'", srcTar)
+		return errors.Wrap(err, "failed to open lifecycle")
 	}
-	defer tarFile.Close()
-
-	gzipReader, err = gzip.NewReader(tarFile)
-	fhFinal = gzipReader
-	if err != nil {
-		return errors.Wrap(err, "failed to create gzip reader")
-	}
-
-	defer gzipReader.Close()
-
-	tr := tar.NewReader(fhFinal)
+	defer lr.Close()
+	tr := tar.NewReader(lr)
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -699,7 +683,7 @@ func (b *Builder) lifecycleLayer(dest string) (string, error) {
 		return "", err
 	}
 
-	err = b.embedLifecycleTar(tw, b.lifecyclePath)
+	err = b.embedLifecycleTar(tw)
 	if err != nil {
 		return "", err
 	}

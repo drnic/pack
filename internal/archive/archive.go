@@ -95,6 +95,8 @@ func CreateSingleFileTar(tarFile, path, txt string) error {
 	return tw.Close()
 }
 
+var ErrEntryNotExist = errors.New("not exist")
+
 func ReadTarEntry(rc io.Reader, entryPath string) (*tar.Header, []byte, error) {
 	tr := tar.NewReader(rc)
 	for {
@@ -116,7 +118,7 @@ func ReadTarEntry(rc io.Reader, entryPath string) (*tar.Header, []byte, error) {
 		}
 	}
 
-	return nil, nil, fmt.Errorf("could not find entry path '%s' in tar", entryPath)
+	return nil, nil, errors.Wrapf(ErrEntryNotExist, "could not find entry path '%s' in tar", entryPath)
 }
 
 func WriteDirToTar(tw *tar.Writer, srcDir, basePath string, uid, gid int, mode int64) error {

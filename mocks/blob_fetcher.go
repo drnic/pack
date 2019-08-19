@@ -10,7 +10,7 @@ import (
 	semver "github.com/Masterminds/semver"
 	gomock "github.com/golang/mock/gomock"
 
-	blob "github.com/buildpack/pack/blob"
+	builder "github.com/buildpack/pack/builder"
 )
 
 // MockBlobFetcher is a mock of BlobFetcher interface
@@ -37,9 +37,9 @@ func (m *MockBlobFetcher) EXPECT() *MockBlobFetcherMockRecorder {
 }
 
 // FetchBuildpack mocks base method
-func (m *MockBlobFetcher) FetchBuildpack(arg0 string) (blob.Buildpack, error) {
+func (m *MockBlobFetcher) FetchBuildpack(arg0 string) (*builder.Buildpack, error) {
 	ret := m.ctrl.Call(m, "FetchBuildpack", arg0)
-	ret0, _ := ret[0].(blob.Buildpack)
+	ret0, _ := ret[0].(*builder.Buildpack)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -50,9 +50,9 @@ func (mr *MockBlobFetcherMockRecorder) FetchBuildpack(arg0 interface{}) *gomock.
 }
 
 // FetchLifecycle mocks base method
-func (m *MockBlobFetcher) FetchLifecycle(arg0 *semver.Version, arg1 string) (blob.Lifecycle, error) {
+func (m *MockBlobFetcher) FetchLifecycle(arg0 *semver.Version, arg1 string) (*builder.Lifecycle, error) {
 	ret := m.ctrl.Call(m, "FetchLifecycle", arg0, arg1)
-	ret0, _ := ret[0].(blob.Lifecycle)
+	ret0, _ := ret[0].(*builder.Lifecycle)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

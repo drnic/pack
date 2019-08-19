@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil/fakes"
 	"github.com/fatih/color"
 	"github.com/sclevine/spec"
@@ -111,6 +110,11 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 		it.After(func() {
 			baseImage.Cleanup()
 		})
+
+		info := builder.BuildpackInfo{
+			ID:      "some-buildpack-id",
+			Version: "some-buildpack-version",
+		}
 
 		when("#Save", func() {
 			var buildpackTgz string
@@ -217,13 +221,13 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			when("validating order", func() {
 				when("has single buildpack", func() {
 					it.Before(func() {
-						subject.AddBuildpack(blob.Buildpack{
-							Info: blob.BuildpackInfo{
+						subject.AddBuildpack(&builder.Buildpack{
+							Info: builder.BuildpackInfo{
 								ID:      "buildpack-1-id",
 								Version: "buildpack-1-version",
 							},
 							Blob: &blob.Blob{Path: buildpackTgz},
-							Stacks: []blob.Stack{
+							Stacks: []builder.Stack{
 								{ID: "some.stack.id"},
 							},
 						})
@@ -232,7 +236,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 					it("should resolve unset version", func() {
 						subject.SetOrder(builder.Order{{
 							Group: []builder.BuildpackRef{
-								{BuildpackInfo: blob.BuildpackInfo{ID: "buildpack-1-id"}}},
+								{BuildpackInfo: builder.BuildpackInfo{ID: "buildpack-1-id"}}},
 						}})
 
 						err := subject.Save()
@@ -261,7 +265,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						it("should error", func() {
 							subject.SetOrder(builder.Order{{
 								Group: []builder.BuildpackRef{
-									{BuildpackInfo: blob.BuildpackInfo{ID: "missing-buildpack-id"}}},
+									{BuildpackInfo: builder.BuildpackInfo{ID: "missing-buildpack-id"}}},
 							}})
 
 							err := subject.Save()
@@ -274,7 +278,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						it("should error", func() {
 							subject.SetOrder(builder.Order{{
 								Group: []builder.BuildpackRef{
-									{BuildpackInfo: blob.BuildpackInfo{ID: "buildpack-1-id", Version: "missing-buildpack-version"}}},
+									{BuildpackInfo: builder.BuildpackInfo{ID: "buildpack-1-id", Version: "missing-buildpack-version"}}},
 							}})
 
 							err := subject.Save()
@@ -286,24 +290,24 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 				when("has multiple buildpacks with same ID", func() {
 					it.Before(func() {
-						subject.AddBuildpack(blob.Buildpack{
-							Info: blob.BuildpackInfo{
+						subject.AddBuildpack(&builder.Buildpack{
+							Info: builder.BuildpackInfo{
 								ID:      "buildpack-1-id",
 								Version: "buildpack-1-version",
 							},
 							Blob: &blob.Blob{Path: buildpackTgz},
-							Stacks: []blob.Stack{
+							Stacks: []builder.Stack{
 								{ID: "some.stack.id"},
 							},
 						})
 
-						subject.AddBuildpack(blob.Buildpack{
-							Info: blob.BuildpackInfo{
+						subject.AddBuildpack(&builder.Buildpack{
+							Info: builder.BuildpackInfo{
 								ID:      "buildpack-1-id",
 								Version: "buildpack-1-version2",
 							},
 							Blob: &blob.Blob{Path: buildpackTgz},
-							Stacks: []blob.Stack{
+							Stacks: []builder.Stack{
 								{ID: "some.stack.id"},
 							},
 						})
@@ -313,7 +317,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						it("should keep order version", func() {
 							subject.SetOrder(builder.Order{{
 								Group: []builder.BuildpackRef{
-									{BuildpackInfo: blob.BuildpackInfo{ID: "buildpack-1-id", Version: "buildpack-1-version"}}},
+									{BuildpackInfo: builder.BuildpackInfo{ID: "buildpack-1-id", Version: "buildpack-1-version"}}},
 							}})
 
 							err := subject.Save()
@@ -343,7 +347,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						it("return error", func() {
 							subject.SetOrder(builder.Order{{
 								Group: []builder.BuildpackRef{
-									{BuildpackInfo: blob.BuildpackInfo{ID: "buildpack-1-id"}}},
+									{BuildpackInfo: builder.BuildpackInfo{ID: "buildpack-1-id"}}},
 							}})
 
 							err := subject.Save()
@@ -356,11 +360,8 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			when("validating buildpacks", func() {
 				when("buildpack is missing both order and stack", func() {
 					it("returns an error", func() {
-						subject.AddBuildpack(blob.Buildpack{
-							Info: blob.BuildpackInfo{
-								ID:      "some-buildpack-id",
-								Version: "some-buildpack-version",
-							},
+						subject.AddBuildpack(&builder.Buildpack{
+							Info: info,
 							Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 						})
 
@@ -372,20 +373,18 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 				when("buildpack has both order and stack", func() {
 					it("returns an error", func() {
-						subject.AddBuildpack(blob.Buildpack{
-							Info: blob.BuildpackInfo{
-								ID:      "some-buildpack-id",
-								Version: "some-buildpack-version",
-							},
+						info := info
+						subject.AddBuildpack(&builder.Buildpack{
+							Info: info,
 							Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-							Order: blob.Order{
+							Order: builder.Order{
 								{
-									Group: []blob.BuildpackInfo{
-										{ID: "some-buildpack-id", Version: "some-buildpack-version"},
+									Group: []builder.BuildpackRef{
+										{BuildpackInfo: info},
 									},
 								},
 							},
-							Stacks: []blob.Stack{
+							Stacks: []builder.Stack{
 								{ID: "some.stack.id"},
 							},
 						})
@@ -399,16 +398,16 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 				when("nested buildpack does not exist", func() {
 					when("buildpack by id does not exist", func() {
 						it("returns an error", func() {
-							subject.AddBuildpack(blob.Buildpack{
-								Info: blob.BuildpackInfo{
-									ID:      "some-buildpack-id",
-									Version: "some-buildpack-version",
-								},
+							subject.AddBuildpack(&builder.Buildpack{
+								Info: info,
 								Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-								Order: blob.Order{
+								Order: builder.Order{
 									{
-										Group: []blob.BuildpackInfo{
-											{ID: "missing-buildpack-id", Version: "missing-buildpack-version"},
+										Group: []builder.BuildpackRef{
+											{BuildpackInfo: builder.BuildpackInfo{
+												ID:      "missing-buildpack-id",
+												Version: "missing-buildpack-version",
+											}},
 										},
 									},
 								},
@@ -422,16 +421,16 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 					when("buildpack version does not exist", func() {
 						it("returns an error", func() {
-							subject.AddBuildpack(blob.Buildpack{
-								Info: blob.BuildpackInfo{
-									ID:      "some-buildpack-id",
-									Version: "some-buildpack-version",
-								},
+							subject.AddBuildpack(&builder.Buildpack{
+								Info: info,
 								Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-								Order: blob.Order{
+								Order: builder.Order{
 									{
-										Group: []blob.BuildpackInfo{
-											{ID: "some-buildpack-id", Version: "missing-buildpack-version"},
+										Group: []builder.BuildpackRef{
+											{BuildpackInfo: builder.BuildpackInfo{
+												ID:      "some-buildpack-id",
+												Version: "missing-buildpack-version",
+											}},
 										},
 									},
 								},
@@ -446,13 +445,10 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 				when("buildpack stack id does not match", func() {
 					it("returns an error", func() {
-						subject.AddBuildpack(blob.Buildpack{
-							Info: blob.BuildpackInfo{
-								ID:      "some-buildpack-id",
-								Version: "some-buildpack-version",
-							},
+						subject.AddBuildpack(&builder.Buildpack{
+							Info:   info,
 							Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-							Stacks: []blob.Stack{{ID: "other.stack.id"}},
+							Stacks: []builder.Stack{{ID: "other.stack.id"}},
 						})
 
 						err := subject.Save()
@@ -470,9 +466,8 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			it.Before(func() {
 				lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
 
-				h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
-					Version: semver.MustParse("1.2.3"),
-					Blob:    &blob.Blob{Path: lifecycleTgz},
+				h.AssertNil(t, subject.SetLifecycle(&builder.Lifecycle{
+					Blob: &blob.Blob{Path: lifecycleTgz},
 				}))
 				h.AssertNil(t, subject.Save())
 				h.AssertEq(t, baseImage.IsSaved(), true)
@@ -536,7 +531,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 				var metadata builder.Metadata
 				h.AssertNil(t, json.Unmarshal([]byte(label), &metadata))
-				h.AssertEq(t, metadata.Lifecycle.Version.String(), "1.2.3")
+				h.AssertEq(t, metadata.Lifecycle.Version, "1.2.3")
 			})
 		})
 
@@ -548,59 +543,58 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 				h.AssertNil(t, err)
 				buildpackTgz = h.CreateTGZ(t, filepath.Join("testdata", "buildpack"), "./", 0644)
 
-				subject.AddBuildpack(blob.Buildpack{
-					Info: blob.BuildpackInfo{
+				subject.AddBuildpack(&builder.Buildpack{
+					Info: builder.BuildpackInfo{
 						ID:      "buildpack-1-id",
 						Version: "buildpack-1-version",
 					},
 					Blob: &blob.Blob{Path: buildpackTgz},
-					Order: blob.Order{
+					Order: builder.Order{
 						{
-							Group: []blob.BuildpackInfo{
-								{
+							Group: []builder.BuildpackRef{
+								{BuildpackInfo: builder.BuildpackInfo{
 									ID:      "buildpack-2-id",
 									Version: "buildpack-2-version",
-								},
+								}},
 							},
 						},
-					},
-				})
+					}})
 
-				subject.AddBuildpack(blob.Buildpack{
-					Info: blob.BuildpackInfo{
+				subject.AddBuildpack(&builder.Buildpack{
+					Info: builder.BuildpackInfo{
 						ID:      "buildpack-2-id",
 						Version: "buildpack-2-version",
 					},
 					Blob:   &blob.Blob{Path: buildpackTgz},
-					Stacks: []blob.Stack{{ID: "some.stack.id"}},
+					Stacks: []builder.Stack{{ID: "some.stack.id"}},
 				})
 
-				subject.AddBuildpack(blob.Buildpack{
-					Info: blob.BuildpackInfo{
+				subject.AddBuildpack(&builder.Buildpack{
+					Info: builder.BuildpackInfo{
 						ID:      "buildpack-2-id",
 						Version: "buildpack-2-other-version",
 					},
 					Blob:   &blob.Blob{Path: buildpackTgz},
-					Stacks: []blob.Stack{{ID: "some.stack.id"}},
+					Stacks: []builder.Stack{{ID: "some.stack.id"}},
 				})
 
-				subject.AddBuildpack(blob.Buildpack{
-					Info: blob.BuildpackInfo{
+				subject.AddBuildpack(&builder.Buildpack{
+					Info: builder.BuildpackInfo{
 						ID:      "buildpack-3-id",
 						Version: "buildpack-3-version",
 					},
 					Blob:   &blob.Blob{Path: buildpackTgz},
-					Stacks: []blob.Stack{{ID: "some.stack.id"}},
+					Stacks: []builder.Stack{{ID: "some.stack.id"}},
 				})
 
 				if runtime.GOOS != "windows" {
-					subject.AddBuildpack(blob.Buildpack{
-						Info: blob.BuildpackInfo{
+					subject.AddBuildpack(&builder.Buildpack{
+						Info: builder.BuildpackInfo{
 							ID:      "dir-buildpack-id",
 							Version: "dir-buildpack-version",
 						},
 						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-						Stacks: []blob.Stack{{ID: "some.stack.id"}},
+						Stacks: []builder.Stack{{ID: "some.stack.id"}},
 					})
 				}
 			})
@@ -688,9 +682,8 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 				it.Before(func() {
 					lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
 
-					h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
-						Version: semver.MustParse("0.3.9"),
-						Blob:    &blob.Blob{Path: lifecycleTgz},
+					h.AssertNil(t, subject.SetLifecycle(&builder.Lifecycle{
+						Blob: &blob.Blob{Path: lifecycleTgz},
 					}))
 
 					h.AssertNil(t, subject.Save())
@@ -717,9 +710,8 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 				it.Before(func() {
 					lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
 
-					h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
-						Version: semver.MustParse("0.4.0"),
-						Blob:    &blob.Blob{Path: lifecycleTgz},
+					h.AssertNil(t, subject.SetLifecycle(&builder.Lifecycle{
+						Blob: &blob.Blob{Path: lifecycleTgz},
 					}))
 
 					h.AssertNil(t, subject.Save())
@@ -793,13 +785,10 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 					subject, err = builder.New(baseImage, "some/builder")
 					h.AssertNil(t, err)
 
-					subject.AddBuildpack(blob.Buildpack{
-						Info: blob.BuildpackInfo{
-							ID:      "some-buildpack-id",
-							Version: "some-buildpack-version",
-						},
+					subject.AddBuildpack(&builder.Buildpack{
+						Info:   info,
 						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-						Stacks: []blob.Stack{{ID: "some.stack.id"}},
+						Stacks: []builder.Stack{{ID: "some.stack.id"}},
 					})
 					h.AssertNil(t, subject.Save())
 					h.AssertEq(t, baseImage.IsSaved(), true)
@@ -831,40 +820,34 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 		when("#SetOrder", func() {
 			when("the buildpacks exist in the image", func() {
 				it.Before(func() {
-					subject.AddBuildpack(blob.Buildpack{
-						Info: blob.BuildpackInfo{
-							ID:      "some-buildpack-id",
-							Version: "some-buildpack-version",
-						},
+					subject.AddBuildpack(&builder.Buildpack{
+						Info:   info,
 						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-						Stacks: []blob.Stack{{ID: "some.stack.id"}},
+						Stacks: []builder.Stack{{ID: "some.stack.id"}},
 					})
-					subject.AddBuildpack(blob.Buildpack{
-						Info: blob.BuildpackInfo{
+					subject.AddBuildpack(&builder.Buildpack{
+						Info: builder.BuildpackInfo{
 							ID:      "optional-buildpack-id",
 							Version: "older-optional-buildpack-version",
 						},
 						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-						Stacks: []blob.Stack{{ID: "some.stack.id"}},
+						Stacks: []builder.Stack{{ID: "some.stack.id"}},
 					})
-					subject.AddBuildpack(blob.Buildpack{
-						Info: blob.BuildpackInfo{
+					subject.AddBuildpack(&builder.Buildpack{
+						Info: builder.BuildpackInfo{
 							ID:      "optional-buildpack-id",
 							Version: "optional-buildpack-version",
 						},
 						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-						Stacks: []blob.Stack{{ID: "some.stack.id"}},
+						Stacks: []builder.Stack{{ID: "some.stack.id"}},
 					})
 					subject.SetOrder(builder.Order{
 						{Group: []builder.BuildpackRef{
 							{
-								BuildpackInfo: blob.BuildpackInfo{
-									ID:      "some-buildpack-id",
-									Version: "some-buildpack-version",
-								},
+								BuildpackInfo: info,
 							},
 							{
-								BuildpackInfo: blob.BuildpackInfo{
+								BuildpackInfo: builder.BuildpackInfo{
 									ID:      "optional-buildpack-id",
 									Version: "optional-buildpack-version",
 								},
@@ -889,7 +872,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
   [[order.group]]
     id = "optional-buildpack-id"
     version = "optional-buildpack-version"
-    optional = true
+    optional = true2
 `))
 				})
 
