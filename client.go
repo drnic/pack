@@ -31,6 +31,15 @@ func WithLogger(l logging.Logger) ClientOption {
 	}
 }
 
+// WithLogger supply your own logger.
+func WithCacheDir(path string) ClientOption {
+	return func(c *Client) {
+		c.blobFetcher = blob.NewFetcher(
+			blob.NewDownloader(c.logger, path),
+		)
+	}
+}
+
 // WithDockerClient supply your own docker client.
 func WithDockerClient(docker *dockerClient.Client) ClientOption {
 	return func(c *Client) {
@@ -57,13 +66,16 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		}
 	}
 
-	packHome, err := config.PackHome()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting pack home")
+	if client.blobFetcher == nil {
+		packHome, err := config.PackHome()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting pack home")
+		}
+		downloader := blob.NewDownloader(client.logger, filepath.Join(packHome, "download-cache"))
+		client.blobFetcher = blob.NewFetcher(downloader)
 	}
-	downloader := NewDownloader(client.logger, filepath.Join(packHome, "download-cache"))
+
 	client.imageFetcher = image.NewFetcher(client.logger, client.docker)
-	client.blobFetcher = blob.NewFetcher(downloader)
 	client.lifecycle = build.NewLifecycle(client.docker, client.logger)
 
 	return &client, nil

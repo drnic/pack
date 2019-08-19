@@ -8,6 +8,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+
+	blob "github.com/buildpack/pack/blob"
 )
 
 // MockDownloader is a mock of Downloader interface
@@ -34,9 +36,9 @@ func (m *MockDownloader) EXPECT() *MockDownloaderMockRecorder {
 }
 
 // Download mocks base method
-func (m *MockDownloader) Download(arg0 string) (string, error) {
+func (m *MockDownloader) Download(arg0 string) (*blob.Blob, error) {
 	ret := m.ctrl.Call(m, "Download", arg0)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*blob.Blob)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

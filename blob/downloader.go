@@ -1,4 +1,4 @@
-package pack
+package blob
 
 import (
 	"crypto/sha256"
@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/pkg/errors"
 
@@ -19,45 +18,50 @@ import (
 
 const (
 	cacheDirPrefix = "c"
-	cacheVersion   = "1"
+	cacheVersion   = "2"
 )
 
-type Downloader struct {
+type downloader struct {
 	logger       logging.Logger
 	baseCacheDir string
 }
 
-var schemeRegexp = regexp.MustCompile(`^.+://.*`)
-
-func NewDownloader(logger logging.Logger, baseCacheDir string) *Downloader {
-	return &Downloader{
+func NewDownloader(logger logging.Logger, baseCacheDir string) *downloader {
+	return &downloader{
 		logger:       logger,
 		baseCacheDir: baseCacheDir,
 	}
 }
 
-func (d *Downloader) Download(pathOrUri string) (string, error) {
-	hasScheme := schemeRegexp.MatchString(pathOrUri)
-	if hasScheme {
+func (d *downloader) Download(pathOrUri string) (*Blob, error) {
+	var (
+		path string
+		err  error
+	)
+	if paths.IsURI(pathOrUri) {
 		parsedUrl, err := url.Parse(pathOrUri)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		switch parsedUrl.Scheme {
 		case "file":
-			return paths.UriToFilePath(pathOrUri)
+			path, err = paths.UriToFilePath(pathOrUri)
 		case "http", "https":
-			return d.handleHTTP(pathOrUri)
+			path, err = d.handleHTTP(pathOrUri)
 		default:
-			return "", fmt.Errorf("unsupported protocol '%s' in URI %q", parsedUrl.Scheme, pathOrUri)
+			return nil, fmt.Errorf("unsupported protocol '%s' in URI %q", parsedUrl.Scheme, pathOrUri)
 		}
 	} else {
-		return d.handleFile(pathOrUri)
+		path, err = d.handleFile(pathOrUri)
 	}
+	if err != nil {
+		return nil, err
+	}
+	return &Blob{Path: path}, nil
 }
 
-func (d *Downloader) handleFile(path string) (string, error) {
+func (d *downloader) handleFile(path string) (string, error) {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return "", nil
@@ -66,7 +70,7 @@ func (d *Downloader) handleFile(path string) (string, error) {
 	return path, nil
 }
 
-func (d *Downloader) handleHTTP(uri string) (string, error) {
+func (d *downloader) handleHTTP(uri string) (string, error) {
 	cacheDir := d.versionedCacheDir()
 
 	if err := os.MkdirAll(cacheDir, 0744); err != nil {
@@ -74,7 +78,6 @@ func (d *Downloader) handleHTTP(uri string) (string, error) {
 	}
 
 	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%x", sha256.Sum256([]byte(uri))))
-	tgzFile := cachePath + ".tgz"
 
 	etagFile := cachePath + ".etag"
 	etagExists, err := fileExists(etagFile)
@@ -95,11 +98,11 @@ func (d *Downloader) handleHTTP(uri string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to download from %q", uri)
 	} else if reader == nil {
-		return tgzFile, nil
+		return cachePath, nil
 	}
 	defer reader.Close()
 
-	fh, err := os.Create(tgzFile)
+	fh, err := os.Create(cachePath)
 	if err != nil {
 		return "", err
 	}
@@ -114,10 +117,10 @@ func (d *Downloader) handleHTTP(uri string) (string, error) {
 		return "", err
 	}
 
-	return tgzFile, nil
+	return cachePath, nil
 }
 
-func (d *Downloader) downloadAsStream(uri string, etag string) (io.ReadCloser, string, error) {
+func (d *downloader) downloadAsStream(uri string, etag string) (io.ReadCloser, string, error) {
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		return nil, "", err
@@ -145,7 +148,7 @@ func (d *Downloader) downloadAsStream(uri string, etag string) (io.ReadCloser, s
 	return nil, "", fmt.Errorf("could not download from %q, code http status %d", uri, resp.StatusCode)
 }
 
-func (d *Downloader) versionedCacheDir() string {
+func (d *downloader) versionedCacheDir() string {
 	return filepath.Join(d.baseCacheDir, cacheDirPrefix+cacheVersion)
 }
 

@@ -222,7 +222,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 								ID:      "buildpack-1-id",
 								Version: "buildpack-1-version",
 							},
-							Blob: blob.Blob{Path: buildpackTgz},
+							Blob: &blob.Blob{Path: buildpackTgz},
 							Stacks: []blob.Stack{
 								{ID: "some.stack.id"},
 							},
@@ -291,7 +291,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 								ID:      "buildpack-1-id",
 								Version: "buildpack-1-version",
 							},
-							Blob: blob.Blob{Path: buildpackTgz},
+							Blob: &blob.Blob{Path: buildpackTgz},
 							Stacks: []blob.Stack{
 								{ID: "some.stack.id"},
 							},
@@ -302,7 +302,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 								ID:      "buildpack-1-id",
 								Version: "buildpack-1-version2",
 							},
-							Blob: blob.Blob{Path: buildpackTgz},
+							Blob: &blob.Blob{Path: buildpackTgz},
 							Stacks: []blob.Stack{
 								{ID: "some.stack.id"},
 							},
@@ -361,7 +361,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 								ID:      "some-buildpack-id",
 								Version: "some-buildpack-version",
 							},
-							Blob: blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+							Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 						})
 
 						err := subject.Save()
@@ -377,7 +377,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 								ID:      "some-buildpack-id",
 								Version: "some-buildpack-version",
 							},
-							Blob: blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+							Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 							Order: blob.Order{
 								{
 									Group: []blob.BuildpackInfo{
@@ -404,7 +404,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 									ID:      "some-buildpack-id",
 									Version: "some-buildpack-version",
 								},
-								Blob: blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+								Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 								Order: blob.Order{
 									{
 										Group: []blob.BuildpackInfo{
@@ -427,7 +427,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 									ID:      "some-buildpack-id",
 									Version: "some-buildpack-version",
 								},
-								Blob: blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+								Blob: &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 								Order: blob.Order{
 									{
 										Group: []blob.BuildpackInfo{
@@ -451,7 +451,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 								ID:      "some-buildpack-id",
 								Version: "some-buildpack-version",
 							},
-							Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+							Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 							Stacks: []blob.Stack{{ID: "other.stack.id"}},
 						})
 
@@ -472,7 +472,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 				h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
 					Version: semver.MustParse("1.2.3"),
-					Blob:    blob.Blob{Path: lifecycleTgz},
+					Blob:    &blob.Blob{Path: lifecycleTgz},
 				}))
 				h.AssertNil(t, subject.Save())
 				h.AssertEq(t, baseImage.IsSaved(), true)
@@ -553,7 +553,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						ID:      "buildpack-1-id",
 						Version: "buildpack-1-version",
 					},
-					Blob: blob.Blob{Path: buildpackTgz},
+					Blob: &blob.Blob{Path: buildpackTgz},
 					Order: blob.Order{
 						{
 							Group: []blob.BuildpackInfo{
@@ -571,7 +571,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						ID:      "buildpack-2-id",
 						Version: "buildpack-2-version",
 					},
-					Blob:   blob.Blob{Path: buildpackTgz},
+					Blob:   &blob.Blob{Path: buildpackTgz},
 					Stacks: []blob.Stack{{ID: "some.stack.id"}},
 				})
 
@@ -580,7 +580,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						ID:      "buildpack-2-id",
 						Version: "buildpack-2-other-version",
 					},
-					Blob:   blob.Blob{Path: buildpackTgz},
+					Blob:   &blob.Blob{Path: buildpackTgz},
 					Stacks: []blob.Stack{{ID: "some.stack.id"}},
 				})
 
@@ -589,7 +589,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						ID:      "buildpack-3-id",
 						Version: "buildpack-3-version",
 					},
-					Blob:   blob.Blob{Path: buildpackTgz},
+					Blob:   &blob.Blob{Path: buildpackTgz},
 					Stacks: []blob.Stack{{ID: "some.stack.id"}},
 				})
 
@@ -599,7 +599,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 							ID:      "dir-buildpack-id",
 							Version: "dir-buildpack-version",
 						},
-						Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 						Stacks: []blob.Stack{{ID: "some.stack.id"}},
 					})
 				}
@@ -690,7 +690,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 					h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
 						Version: semver.MustParse("0.3.9"),
-						Blob:    blob.Blob{Path: lifecycleTgz},
+						Blob:    &blob.Blob{Path: lifecycleTgz},
 					}))
 
 					h.AssertNil(t, subject.Save())
@@ -719,7 +719,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 					h.AssertNil(t, subject.SetLifecycle(blob.Lifecycle{
 						Version: semver.MustParse("0.4.0"),
-						Blob:    blob.Blob{Path: lifecycleTgz},
+						Blob:    &blob.Blob{Path: lifecycleTgz},
 					}))
 
 					h.AssertNil(t, subject.Save())
@@ -798,7 +798,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 							ID:      "some-buildpack-id",
 							Version: "some-buildpack-version",
 						},
-						Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 						Stacks: []blob.Stack{{ID: "some.stack.id"}},
 					})
 					h.AssertNil(t, subject.Save())
@@ -836,7 +836,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 							ID:      "some-buildpack-id",
 							Version: "some-buildpack-version",
 						},
-						Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 						Stacks: []blob.Stack{{ID: "some.stack.id"}},
 					})
 					subject.AddBuildpack(blob.Buildpack{
@@ -844,7 +844,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 							ID:      "optional-buildpack-id",
 							Version: "older-optional-buildpack-version",
 						},
-						Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 						Stacks: []blob.Stack{{ID: "some.stack.id"}},
 					})
 					subject.AddBuildpack(blob.Buildpack{
@@ -852,7 +852,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 							ID:      "optional-buildpack-id",
 							Version: "optional-buildpack-version",
 						},
-						Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+						Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 						Stacks: []blob.Stack{{ID: "some.stack.id"}},
 					})
 					subject.SetOrder(builder.Order{

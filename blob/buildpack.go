@@ -13,7 +13,7 @@ type Buildpack struct {
 	Info   BuildpackInfo `toml:"buildpack"`
 	Stacks []Stack       `toml:"stacks"`
 	Order  Order         `toml:"order"`
-	Blob   `toml:"-"`
+	*Blob  `toml:"-"`
 }
 
 type BuildpackInfo struct {
@@ -31,9 +31,9 @@ type Stack struct {
 	ID string
 }
 
-func NewBuildpack(path string) (Buildpack, error) {
-	bp := Buildpack{Blob: Blob{Path: path}}
-	rc, err := bp.Open()
+func NewBuildpack(blob *Blob) (Buildpack, error) {
+	bp := Buildpack{Blob: blob}
+	rc, err := blob.Open()
 	if err != nil {
 		return Buildpack{}, errors.Wrap(err, "open buildpack")
 	}
@@ -41,7 +41,7 @@ func NewBuildpack(path string) (Buildpack, error) {
 	_, buf, err := archive.ReadTarEntry(rc, "buildpack.toml")
 	_, err = toml.Decode(string(buf), &bp)
 	if err != nil {
-		return Buildpack{}, errors.Wrapf(err, "reading buildpack.toml from path %s", path)
+		return Buildpack{}, errors.Wrapf(err, "reading buildpack.toml from buildpack at path %s", blob.Path)
 	}
 	return bp, nil
 }

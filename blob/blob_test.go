@@ -25,26 +25,13 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 				blobPath string
 			)
 
-			testBlob := func() {
-				blob := &Blob{Path: blobPath}
-				r, err := blob.Open()
-				h.AssertNil(t, err)
-				defer r.Close()
-				tr := tar.NewReader(r)
-				header, err := tr.Next()
-				h.AssertNil(t, err)
-				h.AssertEq(t, header.Name, "file.txt")
-				contents := make([]byte, header.FileInfo().Size(), header.FileInfo().Size())
-				_, err = tr.Read(contents)
-				h.AssertSameInstance(t, err, io.EOF)
-				h.AssertEq(t, string(contents), "contents")
-			}
-
 			when("dir", func() {
 				it.Before(func() {
 					blobPath = blobDir
 				})
-				it("returns a tar reader", testBlob)
+				it("returns a tar reader", func() {
+					testBlobOpen(t, &Blob{Path: blobPath})
+				})
 			})
 
 			when("tgz", func() {
@@ -55,7 +42,9 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 				it.After(func() {
 					h.AssertNil(t, os.Remove(blobPath))
 				})
-				it("returns a tar reader", testBlob)
+				it("returns a tar reader", func() {
+					testBlobOpen(t, &Blob{Path: blobPath})
+				})
 			})
 
 			when("tar", func() {
@@ -66,8 +55,24 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 				it.After(func() {
 					h.AssertNil(t, os.Remove(blobPath))
 				})
-				it("returns a tar reader", testBlob)
+				it("returns a tar reader", func() {
+					testBlobOpen(t, &Blob{Path: blobPath})
+				})
 			})
 		})
 	})
+}
+
+func testBlobOpen(t *testing.T, blob *Blob) {
+	rc, err := blob.Open()
+	h.AssertNil(t, err)
+	defer rc.Close()
+	tr := tar.NewReader(rc)
+	header, err := tr.Next()
+	h.AssertNil(t, err)
+	h.AssertEq(t, header.Name, "file.txt")
+	contents := make([]byte, header.FileInfo().Size(), header.FileInfo().Size())
+	_, err = tr.Read(contents)
+	h.AssertSameInstance(t, err, io.EOF)
+	h.AssertEq(t, string(contents), "contents")
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/docker/docker/pkg/ioutils"
 	"github.com/pkg/errors"
 
 	"github.com/buildpack/pack/internal/archive"
@@ -15,6 +16,7 @@ type Blob struct {
 	Path string
 }
 
+// Open returns an io.ReadCloser whose contents are in tar archive format
 func (b *Blob) Open() (io.ReadCloser, error) {
 	fi, err := os.Stat(b.Path)
 	if err != nil {
@@ -36,7 +38,13 @@ func (b *Blob) Open() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "create gzip reader")
 	}
-	return gzr, nil
+	rc := ioutils.NewReadCloserWrapper(gzr, func() error {
+		if err := gzr.Close(); err != nil {
+			return err
+		}
+		return fh.Close()
+	})
+	return rc, nil
 }
 
 func isGZip(file *os.File) (bool, error) {

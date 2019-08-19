@@ -18,6 +18,7 @@ import (
 	"github.com/buildpack/pack/build"
 	"github.com/buildpack/pack/builder"
 	"github.com/buildpack/pack/internal/archive"
+	"github.com/buildpack/pack/internal/paths"
 	"github.com/buildpack/pack/style"
 )
 
@@ -238,17 +239,12 @@ func (c *Client) processBuildpacks(buildpacks []string) ([]blob.Buildpack, build
 	return bps, group, nil
 }
 
-func isBuildpackId(path string) bool {
-	if _, err := os.Stat(filepath.Join(path, "buildpack.toml")); err == nil {
-		return false
-	}
-
-	if !schemeRegexp.MatchString(path) {
-		if _, err := os.Stat(path); err != nil {
+func isBuildpackId(bp string) bool {
+	if !paths.IsURI(bp) {
+		if _, err := os.Stat(bp); err != nil {
 			return true
 		}
 	}
-
 	return false
 }
 

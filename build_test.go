@@ -98,7 +98,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 		subject = &Client{
 			logger:       logger,
 			imageFetcher: fakeImageFetcher,
-			blobFetcher:  blob.NewFetcher(NewDownloader(logger, tmpDir)),
+			blobFetcher:  blob.NewFetcher(blob.NewDownloader(logger, tmpDir)),
 			lifecycle:    fakeLifecycle,
 			docker:       docker,
 		}

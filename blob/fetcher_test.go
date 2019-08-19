@@ -1,4 +1,4 @@
-package blob
+package blob_test
 
 import (
 	"fmt"
@@ -12,6 +12,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
+	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/blob/testmocks"
 	h "github.com/buildpack/pack/testhelpers"
 )
@@ -24,14 +25,14 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 	var (
 		mockController *gomock.Controller
 		mockDownloader *testmocks.MockDownloader
-		subject        *Fetcher
+		subject        *blob.Fetcher
 	)
 
 	it.Before(func() {
 		mockController = gomock.NewController(t)
 		mockDownloader = testmocks.NewMockDownloader(mockController)
 
-		subject = NewFetcher(mockDownloader)
+		subject = blob.NewFetcher(mockDownloader)
 	})
 
 	it.After(func() {
@@ -53,7 +54,7 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 			downloadPath := filepath.Join("testdata", "buildpack")
 			mockDownloader.EXPECT().
 				Download(downloadPath).
-				Return(downloadPath, nil)
+				Return(&blob.Blob{Path: downloadPath}, nil)
 
 			out, err := subject.FetchBuildpack(downloadPath)
 			h.AssertNil(t, err)
@@ -68,14 +69,16 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("#FetchLifecycle", func() {
-		var lifecycleTgz string
+		var lifecycleBlob *blob.Blob
 
 		it.Before(func() {
-			lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
+			lifecycleBlob = &blob.Blob{
+				Path: h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755),
+			}
 		})
 
 		it.After(func() {
-			h.AssertNil(t, os.Remove(lifecycleTgz))
+			h.AssertNil(t, os.Remove(lifecycleBlob.Path))
 		})
 
 		when("#FetchLifecycle", func() {
@@ -83,12 +86,12 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 				it("returns a release from github", func() {
 					mockDownloader.EXPECT().
 						Download("https://github.com/buildpack/lifecycle/releases/download/v1.2.3/lifecycle-v1.2.3+linux.x86-64.tgz").
-						Return(lifecycleTgz, nil)
+						Return(lifecycleBlob, nil)
 
 					md, err := subject.FetchLifecycle(semver.MustParse("1.2.3"), "")
 					h.AssertNil(t, err)
 					h.AssertEq(t, md.Version.String(), "1.2.3")
-					h.AssertEq(t, md.Blob.Path, lifecycleTgz)
+					h.AssertEq(t, md.Blob, lifecycleBlob)
 				})
 			})
 
@@ -96,12 +99,12 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 				it("returns the lifecycle from the uri", func() {
 					mockDownloader.EXPECT().
 						Download("https://lifecycle.example.com").
-						Return(lifecycleTgz, nil)
+						Return(lifecycleBlob, nil)
 
 					md, err := subject.FetchLifecycle(nil, "https://lifecycle.example.com")
 					h.AssertNil(t, err)
 					h.AssertNil(t, md.Version)
-					h.AssertEq(t, md.Blob.Path, lifecycleTgz)
+					h.AssertEq(t, md.Blob, lifecycleBlob)
 				})
 			})
 
@@ -109,12 +112,12 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 				it("returns the lifecycle from the uri", func() {
 					mockDownloader.EXPECT().
 						Download("https://lifecycle.example.com").
-						Return(lifecycleTgz, nil)
+						Return(lifecycleBlob, nil)
 
 					md, err := subject.FetchLifecycle(semver.MustParse("1.2.3"), "https://lifecycle.example.com")
 					h.AssertNil(t, err)
 					h.AssertEq(t, md.Version.String(), "1.2.3")
-					h.AssertEq(t, md.Blob.Path, lifecycleTgz)
+					h.AssertEq(t, md.Blob, lifecycleBlob)
 				})
 			})
 
@@ -123,15 +126,15 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 					mockDownloader.EXPECT().
 						Download(fmt.Sprintf(
 							"https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz",
-							DefaultLifecycleVersion,
-							DefaultLifecycleVersion,
+							blob.DefaultLifecycleVersion,
+							blob.DefaultLifecycleVersion,
 						)).
-						Return(lifecycleTgz, nil)
+						Return(lifecycleBlob, nil)
 
 					md, err := subject.FetchLifecycle(nil, "")
 					h.AssertNil(t, err)
-					h.AssertEq(t, md.Version.String(), DefaultLifecycleVersion)
-					h.AssertEq(t, md.Blob.Path, lifecycleTgz)
+					h.AssertEq(t, md.Version.String(), blob.DefaultLifecycleVersion)
+					h.AssertEq(t, md.Blob, lifecycleBlob)
 				})
 			})
 
@@ -144,10 +147,10 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 					mockDownloader.EXPECT().
 						Download(fmt.Sprintf(
 							"https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz",
-							DefaultLifecycleVersion,
-							DefaultLifecycleVersion,
+							blob.DefaultLifecycleVersion,
+							blob.DefaultLifecycleVersion,
 						)).
-						Return(tmp, nil)
+						Return(&blob.Blob{Path: tmp}, nil)
 
 					_, err = subject.FetchLifecycle(nil, "")
 					h.AssertError(t, err, "invalid lifecycle")
@@ -167,10 +170,10 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 					mockDownloader.EXPECT().
 						Download(fmt.Sprintf(
 							"https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz",
-							DefaultLifecycleVersion,
-							DefaultLifecycleVersion,
+							blob.DefaultLifecycleVersion,
+							blob.DefaultLifecycleVersion,
 						)).
-						Return(tmp, nil)
+						Return(&blob.Blob{Path: tmp}, nil)
 
 					_, err = subject.FetchLifecycle(nil, "")
 					h.AssertError(t, err, "invalid lifecycle")

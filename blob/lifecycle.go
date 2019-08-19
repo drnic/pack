@@ -13,7 +13,7 @@ import (
 
 type Lifecycle struct {
 	Version *semver.Version
-	Blob
+	*Blob
 }
 
 var lifeccycleBinaries = []string{
@@ -24,6 +24,14 @@ var lifeccycleBinaries = []string{
 	"exporter",
 	"cacher",
 	"launcher",
+}
+
+func uriFromLifecycleVersion(version *semver.Version) string {
+	if version == nil {
+		version = semver.MustParse(DefaultLifecycleVersion)
+	}
+
+	return fmt.Sprintf("https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", version.String(), version.String())
 }
 
 func (l *Lifecycle) validate() error {

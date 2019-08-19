@@ -1,8 +1,6 @@
 package blob
 
 import (
-	"fmt"
-
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
 )
@@ -13,7 +11,7 @@ const (
 
 //go:generate mockgen -package testmocks -destination testmocks/mock_downloader.go github.com/buildpack/pack/blob Downloader
 type Downloader interface {
-	Download(uri string) (string, error)
+	Download(uri string) (*Blob, error)
 }
 
 type Fetcher struct {
@@ -25,34 +23,32 @@ func NewFetcher(downloader Downloader) *Fetcher {
 }
 
 func (f *Fetcher) FetchBuildpack(uri string) (Buildpack, error) {
-	downloadedPath, err := f.downloader.Download(uri)
+	blob, err := f.downloader.Download(uri)
 	if err != nil {
 		return Buildpack{}, errors.Wrap(err, "fetching buildpack")
 	}
 
-	bp, err := NewBuildpack(downloadedPath)
+	bp, err := NewBuildpack(blob)
 	if err != nil {
 		return Buildpack{}, err
 	}
-	bp.Blob = Blob{Path: downloadedPath}
 	return bp, nil
 }
 
 func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (Lifecycle, error) {
-	if version == nil && uri == "" {
+	if uri == "" && version == nil {
 		version = semver.MustParse(DefaultLifecycleVersion)
 	}
-
 	if uri == "" {
-		uri = fmt.Sprintf("https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", version.String(), version.String())
+		uri = uriFromLifecycleVersion(version)
 	}
 
-	path, err := f.downloader.Download(uri)
+	blob, err := f.downloader.Download(uri)
 	if err != nil {
 		return Lifecycle{}, errors.Wrapf(err, "retrieving lifecycle from %s", uri)
 	}
 
-	lifecycle := Lifecycle{Version: version, Blob: Blob{Path: path}}
+	lifecycle := Lifecycle{Version: version, Blob: blob}
 
 	if err = lifecycle.validate(); err != nil {
 		return Lifecycle{}, errors.Wrapf(err, "invalid lifecycle")

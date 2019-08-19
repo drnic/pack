@@ -74,14 +74,14 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					Version: "1.2.3",
 				},
 				Stacks: []blob.Stack{{ID: "some.stack.id"}},
-				Blob:   blob.Blob{Path: filepath.Join("testdata", "buildpack")},
+				Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
 			}
 
 			mockBlobFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
 
 			mockBlobFetcher.EXPECT().FetchLifecycle(gomock.Any(), gomock.Any()).
 				Return(blob.Lifecycle{
-					Blob:    blob.Blob{Path: filepath.Join("testdata", "lifecycle.tgz")},
+					Blob:    &blob.Blob{Path: filepath.Join("testdata", "lifecycle.tgz")},
 					Version: semver.MustParse("3.4.5"),
 				}, nil).AnyTimes()
 
