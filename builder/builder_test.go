@@ -9,13 +9,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil/fakes"
 	"github.com/fatih/color"
+	"github.com/golang/mock/gomock"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
+	"github.com/buildpack/pack/builder/testmocks"
 	"github.com/buildpack/pack/internal/archive"
 	h "github.com/buildpack/pack/testhelpers"
 )
@@ -31,12 +34,23 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 		subject   *builder.Builder
 	)
 
+	var (
+		mockController *gomock.Controller
+		mockLifecycle  *testmocks.MockLifecycle
+	)
+
 	it.Before(func() {
 		baseImage = fakes.NewImage("base/image", "", "")
+		mockController = gomock.NewController(t)
+		mockLifecycle = testmocks.NewMockLifecycle(mockController)
+		mockLifecycle.EXPECT().Open().Return(archive.ReadDirAsTar(
+			filepath.Join("testdata", "lifecycle"), ".", 0, 0, -1), nil).AnyTimes()
+
 	})
 
 	it.After(func() {
 		baseImage.Cleanup()
+		mockController.Finish()
 	})
 
 	when("the base image is not valid", func() {
@@ -120,8 +134,6 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			var buildpackTgz string
 
 			it.Before(func() {
-				err := os.Chmod(filepath.Join("testdata", "buildpack", "buildpack-file"), 0644)
-				h.AssertNil(t, err)
 				buildpackTgz = h.CreateTGZ(t, filepath.Join("testdata", "buildpack"), "./", 0644)
 			})
 
@@ -461,20 +473,20 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("#SetLifecycle", func() {
-			var lifecycleTgz string
-
 			it.Before(func() {
-				lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
+				mockLifecycle.EXPECT().Descriptor().Return(builder.LifecycleDescriptor{
+					Info: builder.LifecycleInfo{
+						Version: &builder.Version{Version: *semver.MustParse("1.2.3")},
+					},
+					API: builder.LifecycleAPI{
+						PlatformVersion:  "2.2",
+						BuildpackVersion: "3.3",
+					},
+				}).AnyTimes()
+				h.AssertNil(t, subject.SetLifecycle(mockLifecycle))
 
-				h.AssertNil(t, subject.SetLifecycle(&builder.Lifecycle{
-					Blob: &blob.Blob{Path: lifecycleTgz},
-				}))
 				h.AssertNil(t, subject.Save())
 				h.AssertEq(t, baseImage.IsSaved(), true)
-			})
-
-			it.After(func() {
-				h.AssertNil(t, os.Remove(lifecycleTgz))
 			})
 
 			it("should set the lifecycle version successfully", func() {
@@ -531,7 +543,9 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 
 				var metadata builder.Metadata
 				h.AssertNil(t, json.Unmarshal([]byte(label), &metadata))
-				h.AssertEq(t, metadata.Lifecycle.Version, "1.2.3")
+				h.AssertEq(t, metadata.Lifecycle.Version.String(), "1.2.3")
+				h.AssertEq(t, metadata.Lifecycle.API.PlatformVersion, "2.2")
+				h.AssertEq(t, metadata.Lifecycle.API.BuildpackVersion, "3.3")
 			})
 		})
 
@@ -677,21 +691,16 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("lifecycle version is < 0.4.0", func() {
-				var lifecycleTgz string
-
 				it.Before(func() {
-					lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
+					mockLifecycle.EXPECT().Descriptor().Return(builder.LifecycleDescriptor{
+						Info: builder.LifecycleInfo{
+							Version: &builder.Version{Version: *semver.MustParse("0.3.0")},
+						},
+					}).AnyTimes()
 
-					h.AssertNil(t, subject.SetLifecycle(&builder.Lifecycle{
-						Blob: &blob.Blob{Path: lifecycleTgz},
-					}))
-
+					h.AssertNil(t, subject.SetLifecycle(mockLifecycle))
 					h.AssertNil(t, subject.Save())
 					h.AssertEq(t, baseImage.IsSaved(), true)
-				})
-
-				it.After(func() {
-					h.AssertNil(t, os.Remove(lifecycleTgz))
 				})
 
 				it("adds latest symlinks", func() {
@@ -705,21 +714,16 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("lifecycle version is >= 0.4.0", func() {
-				var lifecycleTgz string
-
 				it.Before(func() {
-					lifecycleTgz = h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755)
-
-					h.AssertNil(t, subject.SetLifecycle(&builder.Lifecycle{
-						Blob: &blob.Blob{Path: lifecycleTgz},
-					}))
+					mockLifecycle.EXPECT().Descriptor().Return(builder.LifecycleDescriptor{
+						Info: builder.LifecycleInfo{
+							Version: &builder.Version{Version: *semver.MustParse("0.4.0")},
+						},
+					}).AnyTimes()
+					h.AssertNil(t, subject.SetLifecycle(mockLifecycle))
 
 					h.AssertNil(t, subject.Save())
 					h.AssertEq(t, baseImage.IsSaved(), true)
-				})
-
-				it.After(func() {
-					h.AssertNil(t, os.Remove(lifecycleTgz))
 				})
 
 				it("doesn't add the latest symlink", func() {
@@ -872,7 +876,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
   [[order.group]]
     id = "optional-buildpack-id"
     version = "optional-buildpack-version"
-    optional = true2
+    optional = true
 `))
 				})
 

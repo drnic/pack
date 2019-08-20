@@ -17,7 +17,7 @@ type BuildpackMetadata struct {
 
 type LifecycleMetadata struct {
 	LifecycleInfo
-	API LifecycleAPI
+	API LifecycleAPI `json:"api"`
 }
 
 type StackMetadata struct {

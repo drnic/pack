@@ -19,5 +19,5 @@ type ImageFetcher interface {
 
 type BlobFetcher interface {
 	FetchBuildpack(uri string) (*builder.Buildpack, error)
-	FetchLifecycle(version *semver.Version, uri string) (*builder.Lifecycle, error)
+	FetchLifecycle(version *semver.Version, uri string) (builder.Lifecycle, error)
 }

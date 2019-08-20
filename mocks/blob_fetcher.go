@@ -50,9 +50,9 @@ func (mr *MockBlobFetcherMockRecorder) FetchBuildpack(arg0 interface{}) *gomock.
 }
 
 // FetchLifecycle mocks base method
-func (m *MockBlobFetcher) FetchLifecycle(arg0 *semver.Version, arg1 string) (*builder.Lifecycle, error) {
+func (m *MockBlobFetcher) FetchLifecycle(arg0 *semver.Version, arg1 string) (builder.Lifecycle, error) {
 	ret := m.ctrl.Call(m, "FetchLifecycle", arg0, arg1)
-	ret0, _ := ret[0].(*builder.Lifecycle)
+	ret0, _ := ret[0].(builder.Lifecycle)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

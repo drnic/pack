@@ -47,7 +47,7 @@ func uriFromLifecycleVersion(version *semver.Version) string {
 	return fmt.Sprintf("https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", version.String(), version.String())
 }
 
-func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (*builder.Lifecycle, error) {
+func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (builder.Lifecycle, error) {
 	if uri == "" && version == nil {
 		version = semver.MustParse(DefaultLifecycleVersion)
 	}

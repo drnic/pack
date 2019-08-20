@@ -28,7 +28,7 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 		it("makes a lifecycle from a blob", func() {
 			lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
 			h.AssertNil(t, err)
-			h.AssertEq(t, lifecycle.Descriptor().Info.Version, "1.2.3")
+			h.AssertEq(t, lifecycle.Descriptor().Info.Version.String(), "1.2.3")
 			h.AssertEq(t, lifecycle.Descriptor().API.PlatformVersion, "0.2")
 			h.AssertEq(t, lifecycle.Descriptor().API.BuildpackVersion, "0.3")
 		})
@@ -37,7 +37,7 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 			it("assumes 0.1 API versions", func() {
 				lifecycle, err := builder.NewLifecycle(&fakeEmptyBlob{})
 				h.AssertNil(t, err)
-				h.AssertEq(t, lifecycle.Descriptor().Info.Version, "0.3.0")
+				h.AssertEq(t, lifecycle.Descriptor().Info.Version.String(), "0.3.0")
 				h.AssertEq(t, lifecycle.Descriptor().API.PlatformVersion, "0.1")
 				h.AssertEq(t, lifecycle.Descriptor().API.BuildpackVersion, "0.1")
 			})
@@ -46,7 +46,7 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 
 	when("#Validate", func() {
 		when("lifecycle is valid", func() {
-			it.Focus("succeeds", func() {
+			it("succeeds", func() {
 				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
 				h.AssertNil(t, err)
 				h.AssertNil(t, lifecycle.Validate(semver.MustParse("1.2.3")))
@@ -56,12 +56,23 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 		when("the lifecycle has incomplete list of binaries", func() {
 			var tmp string
 			it.Before(func() {
-				tmp, err := ioutil.TempDir("", "")
+				var err error
+				tmp, err = ioutil.TempDir("", "")
 				h.AssertNil(t, err)
 
-				h.AssertNil(t, ioutil.WriteFile(filepath.Join(tmp, "analyzer"), []byte("content"), os.ModePerm))
-				h.AssertNil(t, ioutil.WriteFile(filepath.Join(tmp, "detector"), []byte("content"), os.ModePerm))
-				h.AssertNil(t, ioutil.WriteFile(filepath.Join(tmp, "builder"), []byte("content"), os.ModePerm))
+				h.AssertNil(t, ioutil.WriteFile(filepath.Join(tmp, "lifecycle.toml"), []byte(`
+[api]
+  platform = "0.2"
+  buildpack = "0.3"
+
+[lifecycle]
+  version = "1.2.3"
+`), os.ModePerm))
+
+				h.AssertNil(t, os.Mkdir(filepath.Join(tmp, "lifecycle"), os.ModePerm))
+				h.AssertNil(t, ioutil.WriteFile(filepath.Join(tmp, "lifecycle", "analyzer"), []byte("content"), os.ModePerm))
+				h.AssertNil(t, ioutil.WriteFile(filepath.Join(tmp, "lifecycle", "detector"), []byte("content"), os.ModePerm))
+				h.AssertNil(t, ioutil.WriteFile(filepath.Join(tmp, "lifecycle", "builder"), []byte("content"), os.ModePerm))
 			})
 
 			it.After(func() {
@@ -69,14 +80,16 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns an error", func() {
-				lifecycle := &builder.Lifecycle{Blob: &blob.Blob{Path: tmp}}
+				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: tmp})
+				h.AssertNil(t, err)
 				h.AssertError(t, lifecycle.Validate(semver.MustParse("1.2.3")), "invalid lifecycle")
 			})
 		})
 
 		when("the versions don't match", func() {
 			it("returns and error", func() {
-				lifecycle := &builder.Lifecycle{Blob: &blob.Blob{Path: filepath.Join("testdata", "lifecycle")}}
+				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
+				h.AssertNil(t, err)
 				h.AssertError(t, lifecycle.Validate(semver.MustParse("4.5.6")), "lifecycle has version '1.2.3' which does not match provided version '4.5.6'")
 			})
 		})

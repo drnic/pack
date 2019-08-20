@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil/fakes"
 
 	"github.com/buildpack/pack/blob"
@@ -27,7 +28,7 @@ func NewFakeBuilderImage(t *testing.T, name string, buildpacks []builder.Buildpa
 		},
 		Lifecycle: builder.LifecycleMetadata{
 			LifecycleInfo: builder.LifecycleInfo{
-				Version: blob.DefaultLifecycleVersion,
+				Version: &builder.Version{Version: *semver.MustParse(blob.DefaultLifecycleVersion)},
 			},
 		},
 	}

@@ -20,7 +20,7 @@ const defaultLifecycleVersion = "0.3.0"
 
 var DefaultLifecycleDescriptor = LifecycleDescriptor{
 	Info: LifecycleInfo{
-		Version: defaultLifecycleVersion,
+		Version: &Version{*semver.MustParse(defaultLifecycleVersion)},
 	},
 	API: LifecycleAPI{
 		PlatformVersion:  defaultAPI,
@@ -32,9 +32,16 @@ type Blob interface {
 	Open() (io.ReadCloser, error)
 }
 
-type Lifecycle struct {
+type lifecycle struct {
 	descriptor LifecycleDescriptor
 	Blob
+}
+
+//go:generate mockgen -package testmocks -destination testmocks/lifecycle.go github.com/buildpack/pack/builder Lifecycle
+type Lifecycle interface {
+	Blob
+	Descriptor() LifecycleDescriptor
+	Validate(expectedVersion *semver.Version) error
 }
 
 type LifecycleDescriptor struct {
@@ -43,19 +50,19 @@ type LifecycleDescriptor struct {
 }
 
 type LifecycleInfo struct {
-	Version string `toml:"version"`
+	Version *Version `toml:"version" json:"version"`
 }
 
 type LifecycleAPI struct {
-	PlatformVersion  string `toml:"platform"`
-	BuildpackVersion string `toml:"buildpack"`
+	PlatformVersion  string `toml:"platform" json:"platform"`
+	BuildpackVersion string `toml:"buildpack" json:"buildpack"`
 }
 
-func (l *Lifecycle) Descriptor() LifecycleDescriptor {
+func (l *lifecycle) Descriptor() LifecycleDescriptor {
 	return l.descriptor
 }
 
-func NewLifecycle(blob Blob) (*Lifecycle, error) {
+func NewLifecycle(blob Blob) (Lifecycle, error) {
 	br, err := blob.Open()
 	if err != nil {
 		return nil, errors.Wrap(err, "open lifecycle blob")
@@ -67,14 +74,14 @@ func NewLifecycle(blob Blob) (*Lifecycle, error) {
 
 	//TODO: make lifecycle descriptor required after v0.4.0 release
 	if err != nil && errors.Cause(err) == archive.ErrEntryNotExist {
-		return &Lifecycle{
+		return &lifecycle{
 			Blob:       blob,
 			descriptor: DefaultLifecycleDescriptor}, nil
 	} else if err != nil {
 		return nil, errors.Wrap(err, "decode lifecycle descriptor")
 	}
 	_, err = toml.Decode(string(buf), &descriptor)
-	return &Lifecycle{Blob: blob, descriptor: descriptor}, nil
+	return &lifecycle{Blob: blob, descriptor: descriptor}, nil
 }
 
 var lifecycleBinaries = []string{
@@ -88,15 +95,19 @@ var lifecycleBinaries = []string{
 }
 
 // Validate validates the lifecycle package. If a version is provided, it ensures that the version matches what is expected.
-func (l *Lifecycle) Validate(expectedVersion *semver.Version) error {
+func (l *lifecycle) Validate(expectedVersion *semver.Version) error {
 	if err := l.validateVersion(expectedVersion); err != nil {
-		return err
+		return errors.Wrap(err, "invalid lifecycle: version")
 	}
 
-	return l.validateBinaries()
+	if err := l.validateBinaries(); err != nil {
+		return errors.Wrap(err, "invalid lifecycle: binaries")
+	}
+
+	return nil
 }
 
-func (l *Lifecycle) validateBinaries() error {
+func (l *lifecycle) validateBinaries() error {
 	rc, err := l.Open()
 	if err != nil {
 		return errors.Wrap(err, "create lifecycle blob reader")
@@ -128,13 +139,9 @@ func (l *Lifecycle) validateBinaries() error {
 	return nil
 }
 
-func (l *Lifecycle) validateVersion(expectedVersion *semver.Version) error {
-	actualVer, err := semver.NewVersion(l.descriptor.Info.Version)
-	if err != nil {
-		return errors.Wrapf(err, "lifecycle version %s is invalid semver", style.Symbol(l.descriptor.Info.Version))
-	}
-	if expectedVersion != nil && !actualVer.Equal(expectedVersion) {
-		return errors.Wrapf(err, "lifecycle has version %s which does not match provided version %s", style.Symbol(l.descriptor.Info.Version), style.Symbol(expectedVersion.String()))
+func (l *lifecycle) validateVersion(expectedVersion *semver.Version) error {
+	if expectedVersion != nil && !l.Descriptor().Info.Version.Equal(expectedVersion) {
+		return fmt.Errorf("lifecycle has version %s which does not match provided version %s", style.Symbol(l.descriptor.Info.Version.String()), style.Symbol(expectedVersion.String()))
 	}
 	return nil
 }

@@ -79,9 +79,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			mockBlobFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
 
 			mockBlobFetcher.EXPECT().FetchLifecycle(gomock.Any(), gomock.Any()).
-				Return(&builder.Lifecycle{
-					Blob: &blob.Blob{Path: filepath.Join("testdata", "lifecycle.tgz")},
-				}, nil).AnyTimes()
+				Return(builder.NewLifecycle(
+					&blob.Blob{Path: filepath.Join("testdata", "lifecycle")},
+				)).AnyTimes()
 
 			subject = &Client{
 				logger:       log,

@@ -36,7 +36,7 @@ const (
 
 type Builder struct {
 	image                imgutil.Image
-	lifecycle            *Lifecycle
+	lifecycle            Lifecycle
 	lifecyclePath        string
 	additionalBuildpacks []Buildpack
 	metadata             Metadata
@@ -142,8 +142,10 @@ func (b *Builder) Description() string {
 }
 
 func (b *Builder) GetLifecycleVersion() *semver.Version {
-	//TODO: fix me
-	return semver.MustParse(b.metadata.Lifecycle.Version)
+	if b.metadata.Lifecycle.Version == nil {
+		return nil
+	}
+	return &b.metadata.Lifecycle.Version.Version
 }
 
 func (b *Builder) GetBuildpacks() []BuildpackMetadata {
@@ -169,7 +171,7 @@ func (b *Builder) AddBuildpack(bp *Buildpack) {
 	})
 }
 
-func (b *Builder) SetLifecycle(lifecycle *Lifecycle) error {
+func (b *Builder) SetLifecycle(lifecycle Lifecycle) error {
 	b.lifecycle = lifecycle
 	return nil
 }
@@ -233,7 +235,8 @@ func (b *Builder) Save() error {
 	}
 
 	if b.lifecycle != nil {
-		b.metadata.Lifecycle.Version = b.lifecycle.Descriptor().Info.Version
+		b.metadata.Lifecycle.LifecycleInfo = b.lifecycle.Descriptor().Info
+		b.metadata.Lifecycle.API = b.lifecycle.Descriptor().API
 		lifecycleTar, err := b.lifecycleLayer(tmpDir)
 		if err != nil {
 			return err
