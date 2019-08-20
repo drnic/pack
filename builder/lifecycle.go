@@ -87,10 +87,12 @@ var lifecycleBinaries = []string{
 	"launcher",
 }
 
-func (l *Lifecycle) Validate(version *semver.Version) error {
-	if err := l.validateVersion(version); err != nil {
+// Validate validates the lifecycle package. If a version is provided, it ensures that the version matches what is expected.
+func (l *Lifecycle) Validate(expectedVersion *semver.Version) error {
+	if err := l.validateVersion(expectedVersion); err != nil {
 		return err
 	}
+
 	return l.validateBinaries()
 }
 
@@ -126,13 +128,13 @@ func (l *Lifecycle) validateBinaries() error {
 	return nil
 }
 
-func (l *Lifecycle) validateVersion(version *semver.Version) error {
+func (l *Lifecycle) validateVersion(expectedVersion *semver.Version) error {
 	actualVer, err := semver.NewVersion(l.descriptor.Info.Version)
 	if err != nil {
 		return errors.Wrapf(err, "lifecycle version %s is invalid semver", style.Symbol(l.descriptor.Info.Version))
 	}
-	if !actualVer.Equal(version) {
-		return errors.Wrapf(err, "lifecycle has version %s which does not match provided version %s", style.Symbol(l.descriptor.Info.Version), style.Symbol(version.String()))
+	if expectedVersion != nil && !actualVer.Equal(expectedVersion) {
+		return errors.Wrapf(err, "lifecycle has version %s which does not match provided version %s", style.Symbol(l.descriptor.Info.Version), style.Symbol(expectedVersion.String()))
 	}
 	return nil
 }

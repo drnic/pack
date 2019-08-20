@@ -39,23 +39,24 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("#FetchBuildpack", func() {
-		var buildpackTgz string
+		var buildpackBlob *blob.Blob
 
 		it.Before(func() {
-			buildpackTgz = h.CreateTGZ(t, filepath.Join("testdata", "buildpack"), "./", 0644)
+			buildpackBlob = &blob.Blob{
+				Path: h.CreateTGZ(t, filepath.Join("testdata", "buildpack"), "./", 0755),
+			}
 		})
 
 		it.After(func() {
-			h.AssertNil(t, os.Remove(buildpackTgz))
+			h.AssertNil(t, os.Remove(buildpackBlob.Path))
 		})
 
 		it("fetches a buildpack", func() {
-			downloadPath := filepath.Join("testdata", "buildpack")
 			mockDownloader.EXPECT().
-				Download(downloadPath).
-				Return(&blob.Blob{Path: downloadPath}, nil)
+				Download(buildpackBlob.Path).
+				Return(buildpackBlob, nil)
 
-			out, err := subject.FetchBuildpack(downloadPath)
+			out, err := subject.FetchBuildpack(buildpackBlob.Path)
 			h.AssertNil(t, err)
 			h.AssertEq(t, out.Info.ID, "bp.one")
 			h.AssertEq(t, out.Info.Version, "bp.one.version")
@@ -63,7 +64,6 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 			h.AssertEq(t, out.Order[0].Group[0].Version, "bp.nested.version")
 			h.AssertEq(t, out.Stacks[0].ID, "some.stack.id")
 			h.AssertEq(t, out.Stacks[1].ID, "other.stack.id")
-			testBlobOpen(t, out)
 		})
 	})
 
