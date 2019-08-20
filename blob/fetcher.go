@@ -26,7 +26,7 @@ func NewFetcher(downloader Downloader) *Fetcher {
 	return &Fetcher{downloader: downloader}
 }
 
-func (f *Fetcher) FetchBuildpack(uri string) (*builder.Buildpack, error) {
+func (f *Fetcher) FetchBuildpack(uri string) (builder.Buildpack, error) {
 	blob, err := f.downloader.Download(uri)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching buildpack")

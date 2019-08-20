@@ -67,14 +67,8 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			imageFetcher.LocalImages["some/run-image"] = fakeRunImage
 			imageFetcher.RemoteImages["localhost:5000/some-run-image"] = fakeRunImageMirror
 
-			bp := &builder.Buildpack{
-				Info: builder.BuildpackInfo{
-					ID:      "bp.one",
-					Version: "1.2.3",
-				},
-				Stacks: []builder.Stack{{ID: "some.stack.id"}},
-				Blob:   &blob.Blob{Path: filepath.Join("testdata", "buildpack")},
-			}
+			bp, err := builder.NewBuildpack(&blob.Blob{Path: filepath.Join("testdata", "buildpack")})
+			h.AssertNil(t, err)
 
 			mockBlobFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
 

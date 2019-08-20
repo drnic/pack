@@ -1,6 +1,6 @@
 [buildpack]
-id = "some-buildpack-id"
-version = "some-buildpack-version"
+id = "bp.one"
+version = "1.2.3"
 
 [[stacks]]
-id = "default.stack"
+id = "some.stack.id"

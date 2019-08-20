@@ -62,12 +62,12 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 		if err != nil {
 			return err
 		}
-		if b.ID != "" && fetchedBuildpack.Info.ID != b.ID {
-			return fmt.Errorf("buildpack from URI '%s' has ID '%s' which does not match ID '%s' from builder config", b.URI, fetchedBuildpack.Info.ID, b.ID)
+		if b.ID != "" && fetchedBuildpack.Descriptor().Info.ID != b.ID {
+			return fmt.Errorf("buildpack from URI '%s' has ID '%s' which does not match ID '%s' from builder config", b.URI, fetchedBuildpack.Descriptor().Info.ID, b.ID)
 		}
 
-		if b.Version != "" && fetchedBuildpack.Info.Version != b.Version {
-			return fmt.Errorf("buildpack from URI '%s' has version '%s' which does not match version '%s' from builder config", b.URI, fetchedBuildpack.Info.Version, b.Version)
+		if b.Version != "" && fetchedBuildpack.Descriptor().Info.Version != b.Version {
+			return fmt.Errorf("buildpack from URI '%s' has version '%s' which does not match version '%s' from builder config", b.URI, fetchedBuildpack.Descriptor().Info.Version, b.Version)
 		}
 
 		builderImage.AddBuildpack(fetchedBuildpack)

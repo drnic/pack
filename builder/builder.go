@@ -164,10 +164,10 @@ func (b *Builder) GetStackInfo() StackMetadata {
 	return b.metadata.Stack
 }
 
-func (b *Builder) AddBuildpack(bp *Buildpack) {
-	b.additionalBuildpacks = append(b.additionalBuildpacks, *bp)
+func (b *Builder) AddBuildpack(bp Buildpack) {
+	b.additionalBuildpacks = append(b.additionalBuildpacks, bp)
 	b.metadata.Buildpacks = append(b.metadata.Buildpacks, BuildpackMetadata{
-		BuildpackInfo: bp.Info,
+		BuildpackInfo: bp.Descriptor().Info,
 	})
 }
 
@@ -252,7 +252,7 @@ func (b *Builder) Save() error {
 			return err
 		}
 		if err := b.image.AddLayer(layerTar); err != nil {
-			return errors.Wrapf(err, "adding layer tar for buildpack %s:%s", style.Symbol(bp.Info.ID), style.Symbol(bp.Info.Version))
+			return errors.Wrapf(err, "adding layer tar for buildpack %s:%s", style.Symbol(bp.Descriptor().Info.ID), style.Symbol(bp.Descriptor().Info.Version))
 		}
 	}
 
@@ -338,26 +338,29 @@ func validateBuildpacks(stackID string, bps []Buildpack) error {
 	bpLookup := map[string]interface{}{}
 
 	for _, bp := range bps {
-		bpLookup[bp.Info.ID+"@"+bp.Info.Version] = nil
+		bpInfo := bp.Descriptor().Info
+		bpLookup[bpInfo.ID+"@"+bpInfo.Version] = nil
 	}
 
 	for _, bp := range bps {
-		if len(bp.Order) == 0 && len(bp.Stacks) == 0 {
-			return fmt.Errorf("buildpack %s must have either stacks or an order defined", style.Symbol(bp.Info.ID+"@"+bp.Info.Version))
+		bpd := bp.Descriptor()
+		//TODO: move to new buildpack
+		if len(bpd.Order) == 0 && len(bpd.Stacks) == 0 {
+			return fmt.Errorf("buildpack %s must have either stacks or an order defined", style.Symbol(bpd.Info.ID+"@"+bpd.Info.Version))
 		}
 
-		if len(bp.Order) >= 1 && len(bp.Stacks) >= 1 {
-			return fmt.Errorf("buildpack %s cannot have both stacks and an order defined", style.Symbol(bp.Info.ID+"@"+bp.Info.Version))
+		if len(bpd.Order) >= 1 && len(bpd.Stacks) >= 1 {
+			return fmt.Errorf("buildpack %s cannot have both stacks and an order defined", style.Symbol(bpd.Info.ID+"@"+bpd.Info.Version))
 		}
 
-		if len(bp.Stacks) >= 1 && !bp.SupportsStack(stackID) {
+		if len(bpd.Stacks) >= 1 && !bpd.SupportsStack(stackID) {
 			return fmt.Errorf(
 				"buildpack %s does not support stack %s",
-				style.Symbol(bp.Info.ID+"@"+bp.Info.Version), style.Symbol(stackID),
+				style.Symbol(bpd.Info.ID+"@"+bpd.Info.Version), style.Symbol(stackID),
 			)
 		}
 
-		for _, g := range bp.Order {
+		for _, g := range bpd.Order {
 			for _, r := range g.Group {
 				if _, ok := bpLookup[r.ID+"@"+r.Version]; !ok {
 					return fmt.Errorf("buildpack %s not found on the builder", style.Symbol(r.ID+"@"+r.Version))
@@ -500,7 +503,8 @@ func (b *Builder) stackLayer(dest string) (string, error) {
 //
 // inside the layer = /buildpacks/{ID}/{V}/*
 func (b *Builder) buildpackLayer(dest string, bp Buildpack) (string, error) {
-	layerTar := filepath.Join(dest, fmt.Sprintf("%s.%s.tar", bp.EscapedID(), bp.Info.Version))
+	bpd := bp.Descriptor()
+	layerTar := filepath.Join(dest, fmt.Sprintf("%s.%s.tar", bpd.EscapedID(), bpd.Info.Version))
 
 	fh, err := os.Create(layerTar)
 	if err != nil {
@@ -515,14 +519,14 @@ func (b *Builder) buildpackLayer(dest string, bp Buildpack) (string, error) {
 
 	if err := tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeDir,
-		Name:     path.Join(buildpacksDir, bp.EscapedID()),
+		Name:     path.Join(buildpacksDir, bpd.EscapedID()),
 		Mode:     0755,
 		ModTime:  now,
 	}); err != nil {
 		return "", err
 	}
 
-	baseTarDir := path.Join(buildpacksDir, bp.EscapedID(), bp.Info.Version)
+	baseTarDir := path.Join(buildpacksDir, bpd.EscapedID(), bpd.Info.Version)
 	if err := tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeDir,
 		Name:     baseTarDir,
@@ -533,11 +537,11 @@ func (b *Builder) buildpackLayer(dest string, bp Buildpack) (string, error) {
 	}
 
 	if err := b.embedBuildpackTar(tw, bp, baseTarDir); err != nil {
-		return "", errors.Wrapf(err, "creating layer tar for buildpack '%s:%s'", bp.Info.ID, bp.Info.Version)
+		return "", errors.Wrapf(err, "creating layer tar for buildpack '%s:%s'", bpd.Info.ID, bpd.Info.Version)
 	}
 
 	if lifecycleVersion := b.GetLifecycleVersion(); lifecycleVersion != nil && lifecycleVersion.LessThan(semver.MustParse("0.4.0")) {
-		if err := symlinkLatest(tw, baseTarDir, bp, b.metadata); err != nil {
+		if err := symlinkLatest(tw, baseTarDir, bpd, b.metadata); err != nil {
 			return "", err
 		}
 	}

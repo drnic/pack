@@ -53,7 +53,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 		fakeLifecycle = &mocks.FakeLifecycle{}
 
 		builderName = "example.com/default/builder:tag"
-		defaultBuilderStackID = "default.stack"
+		defaultBuilderStackID = "some.stack.id"
 		defaultBuilderImage = mocks.NewFakeBuilderImage(t,
 			builderName,
 			[]builder.BuildpackMetadata{
@@ -370,7 +370,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 						Builder:  builderName,
 						RunImage: "custom/run",
 					}),
-						"invalid run-image 'custom/run': run-image stack id 'other.stack' does not match builder stack 'default.stack'",
+						"invalid run-image 'custom/run': run-image stack id 'other.stack' does not match builder stack 'some.stack.id'",
 					)
 				})
 			})
@@ -651,7 +651,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 						bldr, err := builder.GetBuilder(defaultBuilderImage)
 						h.AssertNil(t, err)
 						buildpackInfo := builder.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}
-						dirBuildpackInfo := builder.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}
+						dirBuildpackInfo := builder.BuildpackInfo{ID: "bp.one", Version: "1.2.3"}
 						tgzBuildpackInfo := builder.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}
 						h.AssertEq(t, bldr.GetOrder(), builder.Order{
 							{Group: []builder.BuildpackRef{
@@ -702,13 +702,13 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 						h.AssertEq(t, bldr.GetOrder(), builder.Order{
 							{Group: []builder.BuildpackRef{
 								{BuildpackInfo: builder.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}},
-								{BuildpackInfo: builder.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}},
+								{BuildpackInfo: builder.BuildpackInfo{ID: "bp.one", Version: "1.2.3"}},
 								{BuildpackInfo: builder.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}},
 							}},
 						})
 						h.AssertEq(t, bldr.GetBuildpacks(), []builder.BuildpackMetadata{
 							{BuildpackInfo: builder.BuildpackInfo{ID: "buildpack.id", Version: "buildpack.version"}, Latest: true},
-							{BuildpackInfo: builder.BuildpackInfo{ID: "some-buildpack-id", Version: "some-buildpack-version"}, Latest: true},
+							{BuildpackInfo: builder.BuildpackInfo{ID: "bp.one", Version: "1.2.3"}, Latest: true},
 							{BuildpackInfo: builder.BuildpackInfo{ID: "some-other-buildpack-id", Version: "some-other-buildpack-version"}, Latest: true},
 						})
 					})

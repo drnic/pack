@@ -18,6 +18,6 @@ type ImageFetcher interface {
 //go:generate mockgen -package mocks -destination mocks/blob_fetcher.go github.com/buildpack/pack BlobFetcher
 
 type BlobFetcher interface {
-	FetchBuildpack(uri string) (*builder.Buildpack, error)
+	FetchBuildpack(uri string) (builder.Buildpack, error)
 	FetchLifecycle(version *semver.Version, uri string) (builder.Lifecycle, error)
 }

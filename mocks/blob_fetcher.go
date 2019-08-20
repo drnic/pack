@@ -37,9 +37,9 @@ func (m *MockBlobFetcher) EXPECT() *MockBlobFetcherMockRecorder {
 }
 
 // FetchBuildpack mocks base method
-func (m *MockBlobFetcher) FetchBuildpack(arg0 string) (*builder.Buildpack, error) {
+func (m *MockBlobFetcher) FetchBuildpack(arg0 string) (builder.Buildpack, error) {
 	ret := m.ctrl.Call(m, "FetchBuildpack", arg0)
-	ret0, _ := ret[0].(*builder.Buildpack)
+	ret0, _ := ret[0].(builder.Buildpack)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

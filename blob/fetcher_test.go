@@ -55,14 +55,15 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 				Download(buildpackBlob.Path).
 				Return(buildpackBlob, nil)
 
-			out, err := subject.FetchBuildpack(buildpackBlob.Path)
+			bp, err := subject.FetchBuildpack(buildpackBlob.Path)
 			h.AssertNil(t, err)
-			h.AssertEq(t, out.Info.ID, "bp.one")
-			h.AssertEq(t, out.Info.Version, "bp.one.version")
-			h.AssertEq(t, out.Order[0].Group[0].ID, "bp.nested")
-			h.AssertEq(t, out.Order[0].Group[0].Version, "bp.nested.version")
-			h.AssertEq(t, out.Stacks[0].ID, "some.stack.id")
-			h.AssertEq(t, out.Stacks[1].ID, "other.stack.id")
+			descriptor := bp.Descriptor()
+			h.AssertEq(t, descriptor.Info.ID, "bp.one")
+			h.AssertEq(t, descriptor.Info.Version, "bp.one.version")
+			h.AssertEq(t, descriptor.Order[0].Group[0].ID, "bp.nested")
+			h.AssertEq(t, descriptor.Order[0].Group[0].Version, "bp.nested.version")
+			h.AssertEq(t, descriptor.Stacks[0].ID, "some.stack.id")
+			h.AssertEq(t, descriptor.Stacks[1].ID, "other.stack.id")
 		})
 	})
 

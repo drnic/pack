@@ -208,9 +208,9 @@ func (c *Client) processProxyConfig(config *ProxyConfig) ProxyConfig {
 	}
 }
 
-func (c *Client) processBuildpacks(buildpacks []string) ([]*builder.Buildpack, builder.OrderEntry, error) {
+func (c *Client) processBuildpacks(buildpacks []string) ([]builder.Buildpack, builder.OrderEntry, error) {
 	group := builder.OrderEntry{Group: []builder.BuildpackRef{}}
-	var bps []*builder.Buildpack
+	var bps []builder.Buildpack
 	for _, bp := range buildpacks {
 		if isBuildpackId(bp) {
 			id, version := c.parseBuildpack(bp)
@@ -231,7 +231,7 @@ func (c *Client) processBuildpacks(buildpacks []string) ([]*builder.Buildpack, b
 			}
 			bps = append(bps, fetchedBP)
 			group.Group = append(group.Group, builder.BuildpackRef{
-				BuildpackInfo: fetchedBP.Info,
+				BuildpackInfo: fetchedBP.Descriptor().Info,
 			})
 		}
 	}
@@ -261,7 +261,7 @@ func (c *Client) parseBuildpack(bp string) (string, string) {
 	return parts[0], ""
 }
 
-func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[string]string, group builder.OrderEntry, buildpacks []*builder.Buildpack) (*builder.Builder, error) {
+func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[string]string, group builder.OrderEntry, buildpacks []builder.Buildpack) (*builder.Builder, error) {
 	origBuilderName := rawBuilderImage.Name()
 	bldr, err := builder.New(rawBuilderImage, fmt.Sprintf("pack.local/builder/%x:latest", randString(10)))
 	if err != nil {
@@ -269,7 +269,8 @@ func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[s
 	}
 	bldr.SetEnv(env)
 	for _, bp := range buildpacks {
-		c.logger.Debugf("adding buildpack %s version %s to builder", style.Symbol(bp.Info.ID), style.Symbol(bp.Info.Version))
+		bpInfo := bp.Descriptor().Info
+		c.logger.Debugf("adding buildpack %s version %s to builder", style.Symbol(bpInfo.ID), style.Symbol(bpInfo.Version))
 		bldr.AddBuildpack(bp)
 	}
 	if len(group.Group) > 0 {
