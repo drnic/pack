@@ -24,7 +24,7 @@ type BuildpackDescriptor struct {
 	Order  Order         `toml:"order"`
 }
 
-//go:generate mockgen -package testmocks -destination testmocks/buildpack.go github.com/buildpack/pack/builder BuildpackI
+//go:generate mockgen -package testmocks -destination testmocks/buildpack.go github.com/buildpack/pack/builder Buildpack
 type Buildpack interface {
 	Blob
 	Descriptor() BuildpackDescriptor

@@ -14,9 +14,9 @@ import (
 
 	"github.com/buildpack/pack/builder"
 	"github.com/buildpack/pack/image"
-	m "github.com/buildpack/pack/internal/mocks"
-	"github.com/buildpack/pack/mocks"
+	ifakes "github.com/buildpack/pack/internal/fakes"
 	h "github.com/buildpack/pack/testhelpers"
+	"github.com/buildpack/pack/testmocks"
 )
 
 func TestInspectBuilder(t *testing.T) {
@@ -27,7 +27,7 @@ func TestInspectBuilder(t *testing.T) {
 func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 	var (
 		subject          *Client
-		mockImageFetcher *mocks.MockImageFetcher
+		mockImageFetcher *testmocks.MockImageFetcher
 		mockController   *gomock.Controller
 		builderImage     *fakes.Image
 		out              bytes.Buffer
@@ -35,10 +35,10 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 
 	it.Before(func() {
 		mockController = gomock.NewController(t)
-		mockImageFetcher = mocks.NewMockImageFetcher(mockController)
+		mockImageFetcher = testmocks.NewMockImageFetcher(mockController)
 
 		subject = &Client{
-			logger:       m.NewMockLogger(&out),
+			logger:       ifakes.NewFakeLogger(&out),
 			imageFetcher: mockImageFetcher,
 		}
 

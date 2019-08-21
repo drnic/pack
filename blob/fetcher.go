@@ -1,9 +1,6 @@
 package blob
 
 import (
-	"fmt"
-
-	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
 
 	"github.com/buildpack/pack/builder"
@@ -37,37 +34,4 @@ func (f *Fetcher) FetchBuildpack(uri string) (builder.Buildpack, error) {
 		return nil, err
 	}
 	return bp, nil
-}
-
-func uriFromLifecycleVersion(version *semver.Version) string {
-	if version == nil {
-		version = semver.MustParse(DefaultLifecycleVersion)
-	}
-
-	return fmt.Sprintf("https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", version.String(), version.String())
-}
-
-func (f *Fetcher) FetchLifecycle(version *semver.Version, uri string) (builder.Lifecycle, error) {
-	if uri == "" && version == nil {
-		version = semver.MustParse(DefaultLifecycleVersion)
-	}
-	if uri == "" {
-		uri = uriFromLifecycleVersion(version)
-	}
-
-	blob, err := f.downloader.Download(uri)
-	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving lifecycle from %s", uri)
-	}
-
-	lifecycle, err := builder.NewLifecycle(blob)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = lifecycle.Validate(version); err != nil {
-		return nil, errors.Wrapf(err, "invalid lifecycle")
-	}
-
-	return lifecycle, nil
 }

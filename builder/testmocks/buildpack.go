@@ -13,43 +13,46 @@ import (
 	builder "github.com/buildpack/pack/builder"
 )
 
-// MockBuildpackI is a mock of Buildpack interface
-type MockBuildpackI struct {
+// MockBuildpack is a mock of Buildpack interface
+type MockBuildpack struct {
 	ctrl     *gomock.Controller
-	recorder *MockBuildpackIMockRecorder
+	recorder *MockBuildpackMockRecorder
 }
 
-// MockBuildpackIMockRecorder is the mock recorder for MockBuildpackI
-type MockBuildpackIMockRecorder struct {
-	mock *MockBuildpackI
+// MockBuildpackMockRecorder is the mock recorder for MockBuildpack
+type MockBuildpackMockRecorder struct {
+	mock *MockBuildpack
 }
 
-// NewMockBuildpackI creates a new mock instance
-func NewMockBuildpackI(ctrl *gomock.Controller) *MockBuildpackI {
-	mock := &MockBuildpackI{ctrl: ctrl}
-	mock.recorder = &MockBuildpackIMockRecorder{mock}
+// NewMockBuildpack creates a new mock instance
+func NewMockBuildpack(ctrl *gomock.Controller) *MockBuildpack {
+	mock := &MockBuildpack{ctrl: ctrl}
+	mock.recorder = &MockBuildpackMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockBuildpackI) EXPECT() *MockBuildpackIMockRecorder {
+func (m *MockBuildpack) EXPECT() *MockBuildpackMockRecorder {
 	return m.recorder
 }
 
 // Descriptor mocks base method
-func (m *MockBuildpackI) Descriptor() builder.BuildpackDescriptor {
+func (m *MockBuildpack) Descriptor() builder.BuildpackDescriptor {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Descriptor")
 	ret0, _ := ret[0].(builder.BuildpackDescriptor)
 	return ret0
 }
 
 // Descriptor indicates an expected call of Descriptor
-func (mr *MockBuildpackIMockRecorder) Descriptor() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Descriptor", reflect.TypeOf((*MockBuildpackI)(nil).Descriptor))
+func (mr *MockBuildpackMockRecorder) Descriptor() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Descriptor", reflect.TypeOf((*MockBuildpack)(nil).Descriptor))
 }
 
 // Open mocks base method
-func (m *MockBuildpackI) Open() (io.ReadCloser, error) {
+func (m *MockBuildpack) Open() (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Open")
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
@@ -57,6 +60,7 @@ func (m *MockBuildpackI) Open() (io.ReadCloser, error) {
 }
 
 // Open indicates an expected call of Open
-func (mr *MockBuildpackIMockRecorder) Open() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockBuildpackI)(nil).Open))
+func (mr *MockBuildpackMockRecorder) Open() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockBuildpack)(nil).Open))
 }

@@ -24,7 +24,7 @@ import (
 
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
-	"github.com/buildpack/pack/internal/mocks"
+	ifakes "github.com/buildpack/pack/internal/fakes"
 	h "github.com/buildpack/pack/testhelpers"
 )
 
@@ -37,8 +37,8 @@ func TestBuild(t *testing.T) {
 func testBuild(t *testing.T, when spec.G, it spec.S) {
 	var (
 		subject               *Client
-		fakeImageFetcher      *mocks.FakeImageFetcher
-		fakeLifecycle         *mocks.FakeLifecycle
+		fakeImageFetcher      *ifakes.FakeImageFetcher
+		fakeLifecycle         *ifakes.FakeLifecycle
 		defaultBuilderStackID string
 		defaultBuilderImage   *fakes.Image
 		builderName           string
@@ -49,12 +49,12 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 		outBuf                bytes.Buffer
 	)
 	it.Before(func() {
-		fakeImageFetcher = mocks.NewFakeImageFetcher()
-		fakeLifecycle = &mocks.FakeLifecycle{}
+		fakeImageFetcher = ifakes.NewFakeImageFetcher()
+		fakeLifecycle = &ifakes.FakeLifecycle{}
 
 		builderName = "example.com/default/builder:tag"
 		defaultBuilderStackID = "some.stack.id"
-		defaultBuilderImage = mocks.NewFakeBuilderImage(t,
+		defaultBuilderImage = ifakes.NewFakeBuilderImage(t,
 			builderName,
 			[]builder.BuildpackMetadata{
 				{
@@ -93,7 +93,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 		docker, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.38"))
 		h.AssertNil(t, err)
 
-		logger := mocks.NewMockLogger(&outBuf)
+		logger := ifakes.NewFakeLogger(&outBuf)
 
 		subject = &Client{
 			logger:       logger,
@@ -302,7 +302,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 				)
 
 				it.Before(func() {
-					customBuilderImage = mocks.NewFakeBuilderImage(t,
+					customBuilderImage = ifakes.NewFakeBuilderImage(t,
 						builderName,
 						[]builder.BuildpackMetadata{},
 						builder.Config{

@@ -18,6 +18,7 @@ type Client struct {
 	logger       logging.Logger
 	imageFetcher ImageFetcher
 	blobFetcher  BlobFetcher
+	downloader   Downloader
 	lifecycle    Lifecycle
 	docker       *dockerClient.Client
 }

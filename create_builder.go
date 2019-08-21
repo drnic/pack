@@ -27,11 +27,6 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 		return errors.Wrap(err, "invalid builder config")
 	}
 
-	lifecycleVersion, err := processLifecycleVersion(opts.BuilderConfig.Lifecycle.Version)
-	if err != nil {
-		return errors.Wrap(err, "invalid builder config")
-	}
-
 	if err := c.validateRunImageConfig(ctx, opts); err != nil {
 		return err
 	}
@@ -76,27 +71,53 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 	builderImage.SetOrder(opts.BuilderConfig.Order)
 	builderImage.SetStackInfo(opts.BuilderConfig.Stack)
 
-	lifecycleMd, err := c.blobFetcher.FetchLifecycle(lifecycleVersion, opts.BuilderConfig.Lifecycle.URI)
+	lifecycle, err := c.fetchLifecycle(opts.BuilderConfig.Lifecycle)
 	if err != nil {
-		return errors.Wrap(err, "fetching lifecycle")
+		return errors.Wrap(err, "fetch lifecycle")
 	}
 
-	if err := builderImage.SetLifecycle(lifecycleMd); err != nil {
+	if err := builderImage.SetLifecycle(lifecycle); err != nil {
 		return errors.Wrap(err, "setting lifecycle")
 	}
 
 	return builderImage.Save()
 }
 
-func processLifecycleVersion(version string) (*semver.Version, error) {
-	if version == "" {
-		return nil, nil
+func (c *Client) fetchLifecycle(config builder.LifecycleConfig) (builder.Lifecycle, error) {
+	if config.Version != "" && config.URI != "" {
+		return nil, errors.Errorf(
+			"%s can only declare %s or %s, not both",
+			style.Symbol("lifecycle"), style.Symbol("version"), style.Symbol("uri"),
+		)
 	}
-	v, err := semver.NewVersion(version)
+
+	var uri string
+	if config.Version != "" {
+		v, err := semver.NewVersion(config.Version)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s must be a valid semver", style.Symbol("lifecycle.version"))
+		}
+
+		uri = uriFromLifecycleVersion(*v)
+	} else {
+		uri = config.URI
+	}
+
+	b, err := c.downloader.Download(uri)
 	if err != nil {
-		return nil, errors.Wrap(err, "lifecycle.version must be a valid semver")
+		return nil, errors.Wrap(err, "downloading lifecycle")
 	}
-	return v, nil
+
+	lifecycle, err := builder.NewLifecycle(b)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid lifecycle")
+	}
+
+	return lifecycle, nil
+}
+
+func uriFromLifecycleVersion(version semver.Version) string {
+	return fmt.Sprintf("https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz", version.String(), version.String())
 }
 
 func validateBuilderConfig(conf builder.Config) error {

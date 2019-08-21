@@ -81,7 +81,17 @@ func NewLifecycle(blob Blob) (Lifecycle, error) {
 		return nil, errors.Wrap(err, "decode lifecycle descriptor")
 	}
 	_, err = toml.Decode(string(buf), &descriptor)
-	return &lifecycle{Blob: blob, descriptor: descriptor}, nil
+	if err != nil {
+		return nil, errors.Wrap(err, "decoding descriptor")
+	}
+
+	lifecycle := &lifecycle{Blob: blob, descriptor: descriptor}
+
+	if err = lifecycle.validateBinaries(); err != nil {
+		return nil, errors.Wrap(err, "validating binaries")
+	}
+
+	return lifecycle, nil
 }
 
 var lifecycleBinaries = []string{
@@ -98,10 +108,6 @@ var lifecycleBinaries = []string{
 func (l *lifecycle) Validate(expectedVersion *semver.Version) error {
 	if err := l.validateVersion(expectedVersion); err != nil {
 		return errors.Wrap(err, "invalid lifecycle: version")
-	}
-
-	if err := l.validateBinaries(); err != nil {
-		return errors.Wrap(err, "invalid lifecycle: binaries")
 	}
 
 	return nil

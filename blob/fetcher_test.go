@@ -1,7 +1,6 @@
 package blob_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -64,39 +63,6 @@ func fetcher(t *testing.T, when spec.G, it spec.S) {
 			h.AssertEq(t, descriptor.Order[0].Group[0].Version, "bp.nested.version")
 			h.AssertEq(t, descriptor.Stacks[0].ID, "some.stack.id")
 			h.AssertEq(t, descriptor.Stacks[1].ID, "other.stack.id")
-		})
-	})
-
-	when("#FetchLifecycle", func() {
-		var lifecycleBlob *blob.Blob
-
-		it.Before(func() {
-			lifecycleBlob = &blob.Blob{
-				Path: h.CreateTGZ(t, filepath.Join("testdata", "lifecycle"), "./lifecycle", 0755),
-			}
-		})
-
-		it.After(func() {
-			h.AssertNil(t, os.Remove(lifecycleBlob.Path))
-		})
-
-		//TODO: figure out what to do about these tests
-		when("#FetchLifecycle", func() {
-			when("neither is uri nor version is provided", func() {
-				it("returns the default lifecycle", func() {
-					mockDownloader.EXPECT().
-						Download(fmt.Sprintf(
-							"https://github.com/buildpack/lifecycle/releases/download/v%s/lifecycle-v%s+linux.x86-64.tgz",
-							blob.DefaultLifecycleVersion,
-							blob.DefaultLifecycleVersion,
-						)).
-						Return(lifecycleBlob, nil)
-
-					lifecycle, err := subject.FetchLifecycle(nil, "")
-					h.AssertNil(t, err)
-					h.AssertEq(t, lifecycle.Descriptor().Info.Version.String(), blob.DefaultLifecycleVersion)
-				})
-			})
 		})
 	})
 }

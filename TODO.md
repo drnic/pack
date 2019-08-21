@@ -1,0 +1,10 @@
+- [x] Fix FetchLifecycle tests -> probably make fetcher just return blobs
+- [x] Move buildpack to interface similar to lifecycle
+- [ ] Lifecycle EITHER version or uri, not both
+- [ ] Lifecycle nothing older than v0.3.0
+- [ ] Move Version to a different package?
+- [ ] Revisit Version pointer structure
+- [ ] API version types?
+- [ ] API versions in inspect-builder output (the actual story)
+- [ ] Move buildpack validations to NewBuildpack
+- [ ] Check project for TODO

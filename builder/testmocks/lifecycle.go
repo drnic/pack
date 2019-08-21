@@ -39,6 +39,7 @@ func (m *MockLifecycle) EXPECT() *MockLifecycleMockRecorder {
 
 // Descriptor mocks base method
 func (m *MockLifecycle) Descriptor() builder.LifecycleDescriptor {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Descriptor")
 	ret0, _ := ret[0].(builder.LifecycleDescriptor)
 	return ret0
@@ -46,11 +47,13 @@ func (m *MockLifecycle) Descriptor() builder.LifecycleDescriptor {
 
 // Descriptor indicates an expected call of Descriptor
 func (mr *MockLifecycleMockRecorder) Descriptor() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Descriptor", reflect.TypeOf((*MockLifecycle)(nil).Descriptor))
 }
 
 // Open mocks base method
 func (m *MockLifecycle) Open() (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Open")
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
@@ -59,11 +62,13 @@ func (m *MockLifecycle) Open() (io.ReadCloser, error) {
 
 // Open indicates an expected call of Open
 func (mr *MockLifecycleMockRecorder) Open() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockLifecycle)(nil).Open))
 }
 
 // Validate mocks base method
 func (m *MockLifecycle) Validate(arg0 *semver.Version) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validate", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -71,5 +76,6 @@ func (m *MockLifecycle) Validate(arg0 *semver.Version) error {
 
 // Validate indicates an expected call of Validate
 func (mr *MockLifecycleMockRecorder) Validate(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockLifecycle)(nil).Validate), arg0)
 }

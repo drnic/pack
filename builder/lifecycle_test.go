@@ -42,16 +42,6 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 				h.AssertEq(t, lifecycle.Descriptor().API.BuildpackVersion, "0.1")
 			})
 		})
-	})
-
-	when("#Validate", func() {
-		when("lifecycle is valid", func() {
-			it("succeeds", func() {
-				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
-				h.AssertNil(t, err)
-				h.AssertNil(t, lifecycle.Validate(semver.MustParse("1.2.3")))
-			})
-		})
 
 		when("the lifecycle has incomplete list of binaries", func() {
 			var tmp string
@@ -80,9 +70,18 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns an error", func() {
-				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: tmp})
+				_, err := builder.NewLifecycle(&blob.Blob{Path: tmp})
+				h.AssertError(t, err, "validating binaries")
+			})
+		})
+	})
+
+	when("#Validate", func() {
+		when("lifecycle is valid", func() {
+			it("succeeds", func() {
+				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
 				h.AssertNil(t, err)
-				h.AssertError(t, lifecycle.Validate(semver.MustParse("1.2.3")), "invalid lifecycle")
+				h.AssertNil(t, lifecycle.Validate(semver.MustParse("1.2.3")))
 			})
 		})
 

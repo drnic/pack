@@ -20,9 +20,9 @@ import (
 
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
-	imocks "github.com/buildpack/pack/internal/mocks"
-	"github.com/buildpack/pack/mocks"
+	ifakes "github.com/buildpack/pack/internal/fakes"
 	h "github.com/buildpack/pack/testhelpers"
+	"github.com/buildpack/pack/testmocks"
 )
 
 func TestCreateBuilder(t *testing.T) {
@@ -35,8 +35,9 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	when("#CreateBuilder", func() {
 		var (
 			mockController     *gomock.Controller
-			mockBlobFetcher    *mocks.MockBlobFetcher
-			imageFetcher       *imocks.FakeImageFetcher
+			mockBlobFetcher    *testmocks.MockBlobFetcher
+			mockDownloader     *testmocks.MockDownloader
+			imageFetcher       *ifakes.FakeImageFetcher
 			fakeBuildImage     *fakes.Image
 			fakeRunImage       *fakes.Image
 			fakeRunImageMirror *fakes.Image
@@ -47,9 +48,10 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		)
 
 		it.Before(func() {
-			log = imocks.NewMockLogger(&out)
+			log = ifakes.NewFakeLogger(&out)
 			mockController = gomock.NewController(t)
-			mockBlobFetcher = mocks.NewMockBlobFetcher(mockController)
+			mockBlobFetcher = testmocks.NewMockBlobFetcher(mockController)
+			mockDownloader = testmocks.NewMockDownloader(mockController)
 
 			fakeBuildImage = fakes.NewImage("some/build-image", "", "")
 			h.AssertNil(t, fakeBuildImage.SetLabel("io.buildpacks.stack.id", "some.stack.id"))
@@ -62,7 +64,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			fakeRunImageMirror = fakes.NewImage("localhost:5000/some-run-image", "", "")
 			h.AssertNil(t, fakeRunImageMirror.SetLabel("io.buildpacks.stack.id", "some.stack.id"))
 
-			imageFetcher = imocks.NewFakeImageFetcher()
+			imageFetcher = ifakes.NewFakeImageFetcher()
 			imageFetcher.LocalImages["some/build-image"] = fakeBuildImage
 			imageFetcher.LocalImages["some/run-image"] = fakeRunImage
 			imageFetcher.RemoteImages["localhost:5000/some-run-image"] = fakeRunImageMirror
@@ -71,16 +73,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			h.AssertNil(t, err)
 
 			mockBlobFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
-
-			mockBlobFetcher.EXPECT().FetchLifecycle(gomock.Any(), gomock.Any()).
-				Return(builder.NewLifecycle(
-					&blob.Blob{Path: filepath.Join("testdata", "lifecycle")},
-				)).AnyTimes()
+			mockDownloader.EXPECT().Download(gomock.Any()).Return(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")}, nil).AnyTimes()
 
 			subject = &Client{
 				logger:       log,
 				imageFetcher: imageFetcher,
 				blobFetcher:  mockBlobFetcher,
+				downloader:   mockDownloader,
 			}
 
 			opts = CreateBuilderOptions{
@@ -144,7 +143,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			it("should fail when lifecycle version is not a semver", func() {
 				opts.BuilderConfig.Lifecycle.Version = "not-semver"
 				err := subject.CreateBuilder(context.TODO(), opts)
-				h.AssertError(t, err, "lifecycle.version must be a valid semver")
+				h.AssertError(t, err, "'lifecycle.version' must be a valid semver")
 			})
 
 			it("should fail when buildpack ID does not match downloaded buildpack", func() {
