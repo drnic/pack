@@ -118,7 +118,7 @@ func ReadTarEntry(rc io.Reader, entryPath string) (*tar.Header, []byte, error) {
 		}
 	}
 
-	return nil, nil, errors.Wrapf(ErrEntryNotExist, "could not find entry path '%s' in tar", entryPath)
+	return nil, nil, errors.Wrapf(ErrEntryNotExist, "could not find entry path '%s'", entryPath)
 }
 
 func WriteDirToTar(tw *tar.Writer, srcDir, basePath string, uid, gid int, mode int64) error {

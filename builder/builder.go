@@ -62,42 +62,30 @@ type BuildpackRef struct {
 	Optional bool `toml:"optional,omitempty"`
 }
 
+// GetBuilder constructs builder from builder image
 func GetBuilder(img imgutil.Image) (*Builder, error) {
-	uid, gid, err := userAndGroupIDs(img)
-	if err != nil {
-		return nil, err
-	}
-
-	stackID, err := img.Label(stackLabel)
-	if err != nil {
-		return nil, errors.Wrapf(err, "get label %s from image %s", style.Symbol(stackLabel), style.Symbol(img.Name()))
-	} else if stackID == "" {
-		return nil, fmt.Errorf("image %s missing label %s", style.Symbol(img.Name()), style.Symbol(stackLabel))
-	}
-
 	label, err := img.Label(MetadataLabel)
 	if err != nil {
 		return nil, errors.Wrapf(err, "get label %s from image %s", style.Symbol(MetadataLabel), style.Symbol(img.Name()))
-	} else if label == "" {
+	}
+	if label == "" {
 		return nil, fmt.Errorf("builder %s missing label %s -- try recreating builder", style.Symbol(img.Name()), style.Symbol(MetadataLabel))
 	}
 
-	var metadata Metadata
-	if err := json.Unmarshal([]byte(label), &metadata); err != nil {
-		return nil, errors.Wrapf(err, "failed to parse metadata for builder %s", style.Symbol(img.Name()))
-	}
-
-	return &Builder{
-		image:    img,
-		metadata: metadata,
-		order:    metadata.Groups.ToOrder(),
-		UID:      uid,
-		GID:      gid,
-		StackID:  stackID,
-	}, nil
+	return constructBuilder(img, "", label)
 }
 
-func New(img imgutil.Image, name string) (*Builder, error) {
+// New constructs a new builder from base image
+func New(baseImage imgutil.Image, name string) (*Builder, error) {
+	label, err := baseImage.Label(MetadataLabel)
+	if err != nil {
+		return nil, errors.Wrapf(err, "get label %s from image %s", style.Symbol(MetadataLabel), style.Symbol(baseImage.Name()))
+	}
+
+	return constructBuilder(baseImage, name, label)
+}
+
+func constructBuilder(img imgutil.Image, newName string, label string) (*Builder, error) {
 	uid, gid, err := userAndGroupIDs(img)
 	if err != nil {
 		return nil, err
@@ -111,20 +99,16 @@ func New(img imgutil.Image, name string) (*Builder, error) {
 		return nil, fmt.Errorf("image %s missing label %s", style.Symbol(img.Name()), style.Symbol(stackLabel))
 	}
 
-	label, err := img.Label(MetadataLabel)
-	if err != nil {
-		return nil, errors.Wrapf(err, "get label %s from image %s", style.Symbol(MetadataLabel), style.Symbol(img.Name()))
-	}
-	if label == "" {
-		label = "{}"
-	}
-
 	var metadata Metadata
-	if err := json.Unmarshal([]byte(label), &metadata); err != nil {
-		return nil, errors.Wrapf(err, "failed to parse metadata for builder %s", style.Symbol(img.Name()))
+	if label != "" {
+		if err := json.Unmarshal([]byte(label), &metadata); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse metadata for builder %s", style.Symbol(img.Name()))
+		}
 	}
 
-	img.Rename(name)
+	if newName != "" && img.Name() != newName {
+		img.Rename(newName)
+	}
 
 	return &Builder{
 		image:    img,
@@ -344,15 +328,6 @@ func validateBuildpacks(stackID string, bps []Buildpack) error {
 
 	for _, bp := range bps {
 		bpd := bp.Descriptor()
-		//TODO: move to new buildpack
-		if len(bpd.Order) == 0 && len(bpd.Stacks) == 0 {
-			return fmt.Errorf("buildpack %s must have either stacks or an order defined", style.Symbol(bpd.Info.ID+"@"+bpd.Info.Version))
-		}
-
-		if len(bpd.Order) >= 1 && len(bpd.Stacks) >= 1 {
-			return fmt.Errorf("buildpack %s cannot have both stacks and an order defined", style.Symbol(bpd.Info.ID+"@"+bpd.Info.Version))
-		}
-
 		if len(bpd.Stacks) >= 1 && !bpd.SupportsStack(stackID) {
 			return fmt.Errorf(
 				"buildpack %s does not support stack %s",

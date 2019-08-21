@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/buildpack/imgutil"
+
 	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil/fakes"
 	"github.com/fatih/color"
@@ -376,32 +378,6 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("validating buildpacks", func() {
-				when("buildpack is missing both order and stack", func() {
-					it("returns an error", func() {
-						subject.AddBuildpack(&fakeBuildpack{
-							descriptor: builder.BuildpackDescriptor{Info: bp1v1.Descriptor().Info},
-						})
-
-						err := subject.Save()
-
-						h.AssertError(t, err, "buildpack 'buildpack-1-id@buildpack-1-version-1' must have either stacks or an order defined")
-					})
-				})
-
-				when("buildpack has both order and stack", func() {
-					it("returns an error", func() {
-						subject.AddBuildpack(&fakeBuildpack{descriptor: builder.BuildpackDescriptor{
-							Info:   bpOrder.Descriptor().Info,
-							Order:  bpOrder.Descriptor().Order,
-							Stacks: bp1v1.Descriptor().Stacks,
-						}})
-
-						err := subject.Save()
-
-						h.AssertError(t, err, "buildpack 'order-buildpack-id@order-buildpack-version' cannot have both stacks and an order defined")
-					})
-				})
-
 				when("nested buildpack does not exist", func() {
 					when("buildpack by id does not exist", func() {
 						it("returns an error", func() {
@@ -782,6 +758,45 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 	})
+
+	when("builder exists", func() {
+		var builderImage imgutil.Image
+
+		it.Before(func() {
+			h.AssertNil(t, baseImage.SetEnv("CNB_USER_ID", "1234"))
+			h.AssertNil(t, baseImage.SetEnv("CNB_GROUP_ID", "4321"))
+			h.AssertNil(t, baseImage.SetLabel("io.buildpacks.stack.id", "some.stack.id"))
+			h.AssertNil(t, baseImage.SetLabel(
+				"io.buildpacks.builder.metadata",
+				`{"buildpacks": [{"id": "prev.id"}], "groups": [{"buildpacks": [{"id": "prev.id"}]}], "stack": {"runImage": {"image": "prev/run", "mirrors": ["prev/mirror"]}}, "lifecycle": {"version": "6.6.6"}}`,
+			))
+
+			builderImage = baseImage
+		})
+
+		when("#Get", func() {
+			it("gets builder from image", func() {
+				bldr, err := builder.GetBuilder(builderImage)
+				h.AssertNil(t, err)
+				h.AssertEq(t, bldr.GetBuildpacks()[0].ID, "prev.id")
+				h.AssertEq(t, bldr.GetOrder()[0].Group[0].ID, "prev.id")
+			})
+
+			when("metadata is missing", func() {
+				it.Before(func() {
+					h.AssertNil(t, builderImage.SetLabel(
+						"io.buildpacks.builder.metadata",
+						"",
+					))
+				})
+
+				it("should error", func() {
+					_, err := builder.GetBuilder(builderImage)
+					h.AssertError(t, err, "missing label 'io.buildpacks.builder.metadata'")
+				})
+			})
+		})
+	})
 }
 
 type fakeBuildpack struct {
@@ -805,8 +820,14 @@ func assertImageHasBPLayer(t *testing.T, image *fakes.Image, bp builder.Buildpac
 		h.IsDirectory(),
 	)
 
-	h.AssertOnTarEntry(t, layerTar, dirPath+"/buildpack-file",
-		h.ContentEquals("buildpack-contents"),
+	h.AssertOnTarEntry(t, layerTar, dirPath+"/bin/build",
+		h.ContentEquals("build-contents"),
+		h.HasOwnerAndGroup(1234, 4321),
+		h.HasFileMode(0644),
+	)
+
+	h.AssertOnTarEntry(t, layerTar, dirPath+"/bin/detect",
+		h.ContentEquals("detect-contents"),
 		h.HasOwnerAndGroup(1234, 4321),
 		h.HasFileMode(0644),
 	)

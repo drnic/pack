@@ -1,7 +1,10 @@
 package builder
 
 import (
+	"fmt"
 	"strings"
+
+	"github.com/buildpack/pack/style"
 
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
@@ -46,12 +49,35 @@ func NewBuildpack(blob Blob) (Buildpack, error) {
 		return nil, errors.Wrap(err, "open buildpack")
 	}
 	defer rc.Close()
+
 	_, buf, err := archive.ReadTarEntry(rc, "buildpack.toml")
-	_, err = toml.Decode(string(buf), &bpd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading buildpack.toml")
 	}
+
+	_, err = toml.Decode(string(buf), &bpd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "decoding buildpack.toml")
+	}
+
+	err = validateDescriptor(bpd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid buildpack.toml")
+	}
+
 	return &buildpack{descriptor: bpd, Blob: blob}, nil
+}
+
+func validateDescriptor(bpd BuildpackDescriptor) error {
+	if len(bpd.Order) == 0 && len(bpd.Stacks) == 0 {
+		return fmt.Errorf("buildpack %s must have either stacks or an order defined", style.Symbol(bpd.Info.ID+"@"+bpd.Info.Version))
+	}
+
+	if len(bpd.Order) >= 1 && len(bpd.Stacks) >= 1 {
+		return fmt.Errorf("buildpack %s cannot have both stacks and an order defined", style.Symbol(bpd.Info.ID+"@"+bpd.Info.Version))
+	}
+
+	return nil
 }
 
 func (b *BuildpackDescriptor) EscapedID() string {

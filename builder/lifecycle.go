@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/buildpack/pack/internal/archive"
-	"github.com/buildpack/pack/style"
 )
 
 const defaultAPI = "0.1"
@@ -46,7 +45,6 @@ type Blob interface {
 type Lifecycle interface {
 	Blob
 	Descriptor() LifecycleDescriptor
-	Validate(expectedVersion *semver.Version) error
 }
 
 type LifecycleDescriptor struct {
@@ -104,15 +102,6 @@ func (l *lifecycle) Descriptor() LifecycleDescriptor {
 	return l.descriptor
 }
 
-// Validate validates the lifecycle package. If a version is provided, it ensures that the version matches what is expected.
-func (l *lifecycle) Validate(expectedVersion *semver.Version) error {
-	if err := l.validateVersion(expectedVersion); err != nil {
-		return errors.Wrap(err, "invalid lifecycle: version")
-	}
-
-	return nil
-}
-
 func (l *lifecycle) validateBinaries() error {
 	rc, err := l.Open()
 	if err != nil {
@@ -141,13 +130,6 @@ func (l *lifecycle) validateBinaries() error {
 		if !found {
 			return fmt.Errorf("did not find '%s' in tar", p)
 		}
-	}
-	return nil
-}
-
-func (l *lifecycle) validateVersion(expectedVersion *semver.Version) error {
-	if expectedVersion != nil && !l.Descriptor().Info.Version.Equal(expectedVersion) {
-		return fmt.Errorf("lifecycle has version %s which does not match provided version %s", style.Symbol(l.descriptor.Info.Version.String()), style.Symbol(expectedVersion.String()))
 	}
 	return nil
 }
