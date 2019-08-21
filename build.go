@@ -224,11 +224,19 @@ func (c *Client) processBuildpacks(buildpacks []string) ([]builder.Buildpack, bu
 			if runtime.GOOS == "windows" && filepath.Ext(bp) != ".tgz" {
 				return nil, builder.OrderEntry{}, fmt.Errorf("buildpack %s: Windows only supports .tgz-based buildpacks", style.Symbol(bp))
 			}
+
 			c.logger.Debugf("fetching buildpack from %s", style.Symbol(bp))
-			fetchedBP, err := c.blobFetcher.FetchBuildpack(bp)
+
+			blob, err := c.downloader.Download(bp)
 			if err != nil {
-				return nil, builder.OrderEntry{}, errors.Wrapf(err, "failed to fetch buildpack from URI '%s'", bp)
+				return nil, builder.OrderEntry{}, errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(bp))
 			}
+
+			fetchedBP, err := builder.NewBuildpack(blob)
+			if err != nil {
+				return nil, builder.OrderEntry{}, errors.Wrapf(err, "creating buildpack from %s", style.Symbol(bp))
+			}
+
 			bps = append(bps, fetchedBP)
 			group.Group = append(group.Group, builder.BuildpackRef{
 				BuildpackInfo: fetchedBP.Descriptor().Info,

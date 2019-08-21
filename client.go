@@ -17,7 +17,6 @@ import (
 type Client struct {
 	logger       logging.Logger
 	imageFetcher ImageFetcher
-	blobFetcher  BlobFetcher
 	downloader   Downloader
 	lifecycle    Lifecycle
 	docker       *dockerClient.Client
@@ -35,9 +34,7 @@ func WithLogger(l logging.Logger) ClientOption {
 // WithLogger supply your own logger.
 func WithCacheDir(path string) ClientOption {
 	return func(c *Client) {
-		c.blobFetcher = blob.NewFetcher(
-			blob.NewDownloader(c.logger, path),
-		)
+		c.downloader = blob.NewDownloader(c.logger, path)
 	}
 }
 
@@ -67,13 +64,12 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		}
 	}
 
-	if client.blobFetcher == nil {
+	if client.downloader == nil {
 		packHome, err := config.PackHome()
 		if err != nil {
 			return nil, errors.Wrap(err, "getting pack home")
 		}
-		downloader := blob.NewDownloader(client.logger, filepath.Join(packHome, "download-cache"))
-		client.blobFetcher = blob.NewFetcher(downloader)
+		client.downloader = blob.NewDownloader(client.logger, filepath.Join(packHome, "download-cache"))
 	}
 
 	client.imageFetcher = image.NewFetcher(client.logger, client.docker)

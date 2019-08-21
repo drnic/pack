@@ -28,13 +28,18 @@ var DefaultLifecycleDescriptor = LifecycleDescriptor{
 	},
 }
 
-type Blob interface {
-	Open() (io.ReadCloser, error)
+var lifecycleBinaries = []string{
+	"detector",
+	"restorer",
+	"analyzer",
+	"builder",
+	"exporter",
+	"cacher",
+	"launcher",
 }
 
-type lifecycle struct {
-	descriptor LifecycleDescriptor
-	Blob
+type Blob interface {
+	Open() (io.ReadCloser, error)
 }
 
 //go:generate mockgen -package testmocks -destination testmocks/lifecycle.go github.com/buildpack/pack/builder Lifecycle
@@ -58,8 +63,9 @@ type LifecycleAPI struct {
 	BuildpackVersion string `toml:"buildpack" json:"buildpack"`
 }
 
-func (l *lifecycle) Descriptor() LifecycleDescriptor {
-	return l.descriptor
+type lifecycle struct {
+	descriptor LifecycleDescriptor
+	Blob
 }
 
 func NewLifecycle(blob Blob) (Lifecycle, error) {
@@ -94,14 +100,8 @@ func NewLifecycle(blob Blob) (Lifecycle, error) {
 	return lifecycle, nil
 }
 
-var lifecycleBinaries = []string{
-	"detector",
-	"restorer",
-	"analyzer",
-	"builder",
-	"exporter",
-	"cacher",
-	"launcher",
+func (l *lifecycle) Descriptor() LifecycleDescriptor {
+	return l.descriptor
 }
 
 // Validate validates the lifecycle package. If a version is provided, it ensures that the version matches what is expected.

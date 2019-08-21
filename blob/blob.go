@@ -12,12 +12,20 @@ import (
 	"github.com/buildpack/pack/internal/archive"
 )
 
-type Blob struct {
+type Blob interface {
+	Open() (io.ReadCloser, error)
+}
+
+type blob struct {
 	Path string
 }
 
+func NewBlob(path string) Blob {
+	return &blob{Path: path}
+}
+
 // Open returns an io.ReadCloser whose contents are in tar archive format
-func (b *Blob) Open() (io.ReadCloser, error) {
+func (b blob) Open() (io.ReadCloser, error) {
 	fi, err := os.Stat(b.Path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read blob at path '%s'", b.Path)

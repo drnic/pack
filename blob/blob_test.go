@@ -32,7 +32,7 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 					blobPath = blobDir
 				})
 				it("returns a tar reader", func() {
-					testBlobOpen(t, &blob.Blob{Path: blobPath})
+					testBlobOpen(t, blob.NewBlob(blobPath))
 				})
 			})
 
@@ -45,7 +45,7 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 					h.AssertNil(t, os.Remove(blobPath))
 				})
 				it("returns a tar reader", func() {
-					testBlobOpen(t, &blob.Blob{Path: blobPath})
+					testBlobOpen(t, blob.NewBlob(blobPath))
 				})
 			})
 
@@ -58,7 +58,7 @@ func testBlob(t *testing.T, when spec.G, it spec.S) {
 					h.AssertNil(t, os.Remove(blobPath))
 				})
 				it("returns a tar reader", func() {
-					testBlobOpen(t, &blob.Blob{Path: blobPath})
+					testBlobOpen(t, blob.NewBlob(blobPath))
 				})
 			})
 		})

@@ -26,7 +26,7 @@ func TestLifecycle(t *testing.T) {
 func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 	when("#NewLifecycle", func() {
 		it("makes a lifecycle from a blob", func() {
-			lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
+			lifecycle, err := builder.NewLifecycle(blob.NewBlob(filepath.Join("testdata", "lifecycle")))
 			h.AssertNil(t, err)
 			h.AssertEq(t, lifecycle.Descriptor().Info.Version.String(), "1.2.3")
 			h.AssertEq(t, lifecycle.Descriptor().API.PlatformVersion, "0.2")
@@ -70,7 +70,7 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns an error", func() {
-				_, err := builder.NewLifecycle(&blob.Blob{Path: tmp})
+				_, err := builder.NewLifecycle(blob.NewBlob(tmp))
 				h.AssertError(t, err, "validating binaries")
 			})
 		})
@@ -79,7 +79,7 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 	when("#Validate", func() {
 		when("lifecycle is valid", func() {
 			it("succeeds", func() {
-				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
+				lifecycle, err := builder.NewLifecycle(blob.NewBlob(filepath.Join("testdata", "lifecycle")))
 				h.AssertNil(t, err)
 				h.AssertNil(t, lifecycle.Validate(semver.MustParse("1.2.3")))
 			})
@@ -87,7 +87,7 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 
 		when("the versions don't match", func() {
 			it("returns and error", func() {
-				lifecycle, err := builder.NewLifecycle(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")})
+				lifecycle, err := builder.NewLifecycle(blob.NewBlob(filepath.Join("testdata", "lifecycle")))
 				h.AssertNil(t, err)
 				h.AssertError(t, lifecycle.Validate(semver.MustParse("4.5.6")), "lifecycle has version '1.2.3' which does not match provided version '4.5.6'")
 			})

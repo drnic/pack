@@ -53,10 +53,16 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 	}
 
 	for _, b := range opts.BuilderConfig.Buildpacks {
-		fetchedBuildpack, err := c.blobFetcher.FetchBuildpack(b.URI)
+		blob, err := c.downloader.Download(b.URI)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(b.URI))
 		}
+
+		fetchedBuildpack, err := builder.NewBuildpack(blob)
+		if err != nil {
+			return errors.Wrap(err, "creating buildpack")
+		}
+
 		if b.ID != "" && fetchedBuildpack.Descriptor().Info.ID != b.ID {
 			return fmt.Errorf("buildpack from URI '%s' has ID '%s' which does not match ID '%s' from builder config", b.URI, fetchedBuildpack.Descriptor().Info.ID, b.ID)
 		}
@@ -170,8 +176,8 @@ func (c *Client) validateRunImageConfig(ctx context.Context, opts CreateBuilderO
 		}
 	}
 
-	for _, image := range runImages {
-		stackID, err := image.Label("io.buildpacks.stack.id")
+	for _, img := range runImages {
+		stackID, err := img.Label("io.buildpacks.stack.id")
 		if err != nil {
 			return err
 		}
@@ -181,7 +187,7 @@ func (c *Client) validateRunImageConfig(ctx context.Context, opts CreateBuilderO
 				"stack %s from builder config is incompatible with stack %s from run image %s",
 				style.Symbol(opts.BuilderConfig.Stack.ID),
 				style.Symbol(stackID),
-				style.Symbol(image.Name()),
+				style.Symbol(img.Name()),
 			)
 		}
 	}

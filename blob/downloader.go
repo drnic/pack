@@ -33,7 +33,7 @@ func NewDownloader(logger logging.Logger, baseCacheDir string) *downloader {
 	}
 }
 
-func (d *downloader) Download(pathOrUri string) (*Blob, error) {
+func (d *downloader) Download(pathOrUri string) (Blob, error) {
 	var (
 		path string
 		err  error
@@ -58,7 +58,7 @@ func (d *downloader) Download(pathOrUri string) (*Blob, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Blob{Path: path}, nil
+	return &blob{Path: path}, nil
 }
 
 func (d *downloader) handleFile(path string) (string, error) {

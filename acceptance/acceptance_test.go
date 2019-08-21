@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buildpack/pack/build"
+
 	"github.com/buildpack/pack/style"
 
 	"github.com/Masterminds/semver"
@@ -34,7 +36,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
-	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/cache"
 	"github.com/buildpack/pack/internal/archive"
 	h "github.com/buildpack/pack/testhelpers"
@@ -85,7 +86,7 @@ func TestAcceptance(t *testing.T) {
 
 	previousPackPath := os.Getenv(envPreviousPackPath)
 
-	lifecycleVersion := *semver.MustParse(blob.DefaultLifecycleVersion)
+	lifecycleVersion := *semver.MustParse(build.DefaultLifecycleVersion)
 	lifecyclePath := os.Getenv(envLifecyclePath)
 	if lifecyclePath != "" {
 		lifecyclePath, err = filepath.Abs(lifecyclePath)

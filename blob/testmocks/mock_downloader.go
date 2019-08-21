@@ -36,10 +36,10 @@ func (m *MockDownloader) EXPECT() *MockDownloaderMockRecorder {
 }
 
 // Download mocks base method
-func (m *MockDownloader) Download(arg0 string) (*blob.Blob, error) {
+func (m *MockDownloader) Download(arg0 string) (blob.Blob, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Download", arg0)
-	ret0, _ := ret[0].(*blob.Blob)
+	ret0, _ := ret[0].(blob.Blob)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -1,7 +1,9 @@
 - [x] Fix FetchLifecycle tests -> probably make fetcher just return blobs
+- [x] Remove fetcher -> create buildpacks retrieved via downloader (blobs)
 - [x] Move buildpack to interface similar to lifecycle
-- [ ] Lifecycle EITHER version or uri, not both
+- [x] Lifecycle EITHER version or uri, not both
 - [ ] Lifecycle nothing older than v0.3.0
+- [ ] Lifecycle: Move validate(expectedVersion) to where it's being called from (remove from interface)
 - [ ] Move Version to a different package?
 - [ ] Revisit Version pointer structure
 - [ ] API version types?

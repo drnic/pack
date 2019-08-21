@@ -35,7 +35,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 	when("#CreateBuilder", func() {
 		var (
 			mockController     *gomock.Controller
-			mockBlobFetcher    *testmocks.MockBlobFetcher
 			mockDownloader     *testmocks.MockDownloader
 			imageFetcher       *ifakes.FakeImageFetcher
 			fakeBuildImage     *fakes.Image
@@ -50,7 +49,6 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 		it.Before(func() {
 			log = ifakes.NewFakeLogger(&out)
 			mockController = gomock.NewController(t)
-			mockBlobFetcher = testmocks.NewMockBlobFetcher(mockController)
 			mockDownloader = testmocks.NewMockDownloader(mockController)
 
 			fakeBuildImage = fakes.NewImage("some/build-image", "", "")
@@ -69,16 +67,13 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			imageFetcher.LocalImages["some/run-image"] = fakeRunImage
 			imageFetcher.RemoteImages["localhost:5000/some-run-image"] = fakeRunImageMirror
 
-			bp, err := builder.NewBuildpack(&blob.Blob{Path: filepath.Join("testdata", "buildpack")})
-			h.AssertNil(t, err)
-
-			mockBlobFetcher.EXPECT().FetchBuildpack(gomock.Any()).Return(bp, nil).AnyTimes()
-			mockDownloader.EXPECT().Download(gomock.Any()).Return(&blob.Blob{Path: filepath.Join("testdata", "lifecycle")}, nil).AnyTimes()
+			mockDownloader.EXPECT().Download("https://example.fake/bp-one.tgz").Return(blob.NewBlob(filepath.Join("testdata", "buildpack")), nil).AnyTimes()
+			mockDownloader.EXPECT().Download("some/buildpack/dir").Return(blob.NewBlob(filepath.Join("testdata", "buildpack")), nil).AnyTimes()
+			mockDownloader.EXPECT().Download("file:///some-lifecycle").Return(blob.NewBlob(filepath.Join("testdata", "lifecycle")), nil).AnyTimes()
 
 			subject = &Client{
 				logger:       log,
 				imageFetcher: imageFetcher,
-				blobFetcher:  mockBlobFetcher,
 				downloader:   mockDownloader,
 			}
 
@@ -103,7 +98,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 						RunImage:        "some/run-image",
 						RunImageMirrors: []string{"localhost:5000/some-run-image"},
 					},
-					Lifecycle: builder.LifecycleConfig{Version: "3.4.5"},
+					Lifecycle: builder.LifecycleConfig{URI: "file:///some-lifecycle"},
 				},
 				Publish: false,
 				NoPull:  false,
@@ -141,9 +136,17 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("should fail when lifecycle version is not a semver", func() {
+				opts.BuilderConfig.Lifecycle.URI = ""
 				opts.BuilderConfig.Lifecycle.Version = "not-semver"
 				err := subject.CreateBuilder(context.TODO(), opts)
 				h.AssertError(t, err, "'lifecycle.version' must be a valid semver")
+			})
+
+			it("should fail when both lifecycle version and uri are present", func() {
+				opts.BuilderConfig.Lifecycle.URI = "file://some-lifecycle"
+				opts.BuilderConfig.Lifecycle.Version = "not-semver"
+				err := subject.CreateBuilder(context.TODO(), opts)
+				h.AssertError(t, err, "'lifecycle' can only declare 'version' or 'uri', not both")
 			})
 
 			it("should fail when buildpack ID does not match downloaded buildpack", func() {
@@ -194,6 +197,24 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					err := subject.CreateBuilder(context.TODO(), opts)
 					h.AssertNil(t, err)
 				})
+			})
+		})
+
+		when("only lifecycle version is provided", func() {
+			it.Before(func() {
+				opts.BuilderConfig.Lifecycle.URI = ""
+				opts.BuilderConfig.Lifecycle.Version = "3.4.5"
+			})
+
+			it("should download from predetermined uri", func() {
+				mockDownloader.EXPECT().Download(
+					"https://github.com/buildpack/lifecycle/releases/download/v3.4.5/lifecycle-v3.4.5+linux.x86-64.tgz",
+				).Return(
+					blob.NewBlob(filepath.Join("testdata", "lifecycle")), nil,
+				).MinTimes(1)
+
+				err := subject.CreateBuilder(context.TODO(), opts)
+				h.AssertNil(t, err)
 			})
 		})
 

@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buildpack/pack/blob"
+
 	"github.com/buildpack/imgutil/fakes"
 	"github.com/docker/docker/client"
 	"github.com/fatih/color"
@@ -22,7 +24,6 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
-	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
 	ifakes "github.com/buildpack/pack/internal/fakes"
 	h "github.com/buildpack/pack/testhelpers"
@@ -98,7 +99,7 @@ func testBuild(t *testing.T, when spec.G, it spec.S) {
 		subject = &Client{
 			logger:       logger,
 			imageFetcher: fakeImageFetcher,
-			blobFetcher:  blob.NewFetcher(blob.NewDownloader(logger, tmpDir)),
+			downloader:   blob.NewDownloader(logger, tmpDir),
 			lifecycle:    fakeLifecycle,
 			docker:       docker,
 		}

@@ -3,6 +3,8 @@ package pack
 import (
 	"context"
 
+	"github.com/buildpack/pack/blob"
+
 	"github.com/buildpack/imgutil"
 
 	"github.com/buildpack/pack/builder"
@@ -23,5 +25,5 @@ type BlobFetcher interface {
 //go:generate mockgen -package testmocks -destination testmocks/mock_downloader.go github.com/buildpack/pack Downloader
 
 type Downloader interface {
-	Download(uri string) (builder.Blob, error)
+	Download(pathOrUri string) (blob.Blob, error)
 }
