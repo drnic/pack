@@ -7,6 +7,8 @@ import (
 	"path"
 	"regexp"
 
+	"github.com/buildpack/pack/api"
+
 	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
@@ -22,8 +24,8 @@ var DefaultLifecycleDescriptor = LifecycleDescriptor{
 		Version: &Version{*semver.MustParse(defaultLifecycleVersion)},
 	},
 	API: LifecycleAPI{
-		PlatformVersion:  defaultAPI,
-		BuildpackVersion: defaultAPI,
+		PlatformVersion:  api.MustParse(defaultAPI),
+		BuildpackVersion: api.MustParse(defaultAPI),
 	},
 }
 
@@ -57,8 +59,8 @@ type LifecycleInfo struct {
 }
 
 type LifecycleAPI struct {
-	PlatformVersion  string `toml:"platform" json:"platform"`
-	BuildpackVersion string `toml:"buildpack" json:"buildpack"`
+	PlatformVersion  *api.Version `toml:"platform" json:"platform"`
+	BuildpackVersion *api.Version `toml:"buildpack" json:"buildpack"`
 }
 
 type lifecycle struct {

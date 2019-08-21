@@ -5,7 +5,7 @@
 - [ ] Lifecycle nothing older than v0.3.0
 - [ ] Move Version to a different package?
 - [ ] Revisit Version pointer structure
-- [ ] API version types?
+- [x] API version types?
 - [ ] API versions in inspect-builder output (the actual story)
 - [x] Move buildpack validations to NewBuildpack
 - [ ] Check project for TODO

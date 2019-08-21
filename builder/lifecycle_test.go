@@ -28,8 +28,8 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 			lifecycle, err := builder.NewLifecycle(blob.NewBlob(filepath.Join("testdata", "lifecycle")))
 			h.AssertNil(t, err)
 			h.AssertEq(t, lifecycle.Descriptor().Info.Version.String(), "1.2.3")
-			h.AssertEq(t, lifecycle.Descriptor().API.PlatformVersion, "0.2")
-			h.AssertEq(t, lifecycle.Descriptor().API.BuildpackVersion, "0.3")
+			h.AssertEq(t, lifecycle.Descriptor().API.PlatformVersion.String(), "0.2")
+			h.AssertEq(t, lifecycle.Descriptor().API.BuildpackVersion.String(), "0.3")
 		})
 
 		when("there is no descriptor file", func() {
@@ -37,8 +37,8 @@ func testLifecycle(t *testing.T, when spec.G, it spec.S) {
 				lifecycle, err := builder.NewLifecycle(&fakeEmptyBlob{})
 				h.AssertNil(t, err)
 				h.AssertEq(t, lifecycle.Descriptor().Info.Version.String(), "0.3.0")
-				h.AssertEq(t, lifecycle.Descriptor().API.PlatformVersion, "0.1")
-				h.AssertEq(t, lifecycle.Descriptor().API.BuildpackVersion, "0.1")
+				h.AssertEq(t, lifecycle.Descriptor().API.PlatformVersion.String(), "0.1")
+				h.AssertEq(t, lifecycle.Descriptor().API.BuildpackVersion.String(), "0.1")
 			})
 		})
 

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/buildpack/pack/api"
+
 	"github.com/buildpack/imgutil"
 
 	"github.com/Masterminds/semver"
@@ -428,8 +430,8 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 						Version: &builder.Version{Version: *semver.MustParse("1.2.3")},
 					},
 					API: builder.LifecycleAPI{
-						PlatformVersion:  "2.2",
-						BuildpackVersion: "3.3",
+						PlatformVersion:  api.MustParse("2.2"),
+						BuildpackVersion: api.MustParse("3.3"),
 					},
 				}).AnyTimes()
 				h.AssertNil(t, subject.SetLifecycle(mockLifecycle))
@@ -493,8 +495,8 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 				var metadata builder.Metadata
 				h.AssertNil(t, json.Unmarshal([]byte(label), &metadata))
 				h.AssertEq(t, metadata.Lifecycle.Version.String(), "1.2.3")
-				h.AssertEq(t, metadata.Lifecycle.API.PlatformVersion, "2.2")
-				h.AssertEq(t, metadata.Lifecycle.API.BuildpackVersion, "3.3")
+				h.AssertEq(t, metadata.Lifecycle.API.PlatformVersion.String(), "2.2")
+				h.AssertEq(t, metadata.Lifecycle.API.BuildpackVersion.String(), "3.3")
 			})
 		})
 
