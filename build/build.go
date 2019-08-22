@@ -80,10 +80,10 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 		l.logger.Debugf("Build cache %s cleared", style.Symbol(buildCache.Name()))
 	}
 
-	lifecycleVersion := l.builder.GetLifecycleVersion()
+	lifecycleVersion := l.builder.GetLifecycleDescriptor().Info.Version
 	if lifecycleVersion == nil {
 		l.logger.Debug("Warning: lifecycle version unknown")
-		lifecycleVersion = semver.MustParse(DefaultLifecycleVersion)
+		lifecycleVersion = builder.AssumedLifecycleDescriptor.Info.Version
 	} else {
 		l.logger.Debugf("Executing lifecycle version %s", style.Symbol(lifecycleVersion.String()))
 	}
@@ -162,9 +162,11 @@ func randString(n int) string {
 	return string(b)
 }
 
+// TODO Remove, ongoing versions all support volume cache
 func (l *Lifecycle) supportsVolumeCache() bool {
-	if l.builder.GetLifecycleVersion() == nil {
+	lifecycleDescriptor := l.builder.GetLifecycleDescriptor()
+	if lifecycleDescriptor.Info.Version == nil {
 		return false
 	}
-	return l.builder.GetLifecycleVersion().Compare(semver.MustParse("0.2.0")) >= 0
+	return lifecycleDescriptor.Info.Version.Compare(semver.MustParse("0.2.0")) >= 0
 }

@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/Masterminds/semver"
 	"github.com/buildpack/imgutil"
 	"github.com/pkg/errors"
 
@@ -37,7 +36,7 @@ const (
 type Builder struct {
 	image                imgutil.Image
 	lifecycle            Lifecycle
-	lifecyclePath        string
+	lifecycleDescriptor  LifecycleDescriptor
 	additionalBuildpacks []Buildpack
 	metadata             Metadata
 	env                  map[string]string
@@ -110,6 +109,21 @@ func constructBuilder(img imgutil.Image, newName string, label string) (*Builder
 		img.Rename(newName)
 	}
 
+	lifecycleVersion := lifecycleVersionAssumed
+	if metadata.Lifecycle.Version != nil {
+		lifecycleVersion = metadata.Lifecycle.Version
+	}
+
+	buildpackApiVersion := apiVersionAssumed
+	if metadata.Lifecycle.API.BuildpackVersion != nil {
+		buildpackApiVersion = metadata.Lifecycle.API.BuildpackVersion
+	}
+
+	platformApiVersion := apiVersionAssumed
+	if metadata.Lifecycle.API.PlatformVersion != nil {
+		platformApiVersion = metadata.Lifecycle.API.PlatformVersion
+	}
+
 	return &Builder{
 		image:    img,
 		metadata: metadata,
@@ -117,7 +131,16 @@ func constructBuilder(img imgutil.Image, newName string, label string) (*Builder
 		UID:      uid,
 		GID:      gid,
 		StackID:  stackID,
-		env:      map[string]string{},
+		lifecycleDescriptor: LifecycleDescriptor{
+			Info: LifecycleInfo{
+				Version: lifecycleVersion,
+			},
+			API: LifecycleAPI{
+				PlatformVersion:  platformApiVersion,
+				BuildpackVersion: buildpackApiVersion,
+			},
+		},
+		env: map[string]string{},
 	}, nil
 }
 
@@ -125,11 +148,8 @@ func (b *Builder) Description() string {
 	return b.metadata.Description
 }
 
-func (b *Builder) GetLifecycleVersion() *semver.Version {
-	if b.metadata.Lifecycle.Version == nil {
-		return nil
-	}
-	return &b.metadata.Lifecycle.Version.Version
+func (b *Builder) GetLifecycleDescriptor() LifecycleDescriptor {
+	return b.lifecycleDescriptor
 }
 
 func (b *Builder) GetBuildpacks() []BuildpackMetadata {
@@ -157,6 +177,7 @@ func (b *Builder) AddBuildpack(bp Buildpack) {
 
 func (b *Builder) SetLifecycle(lifecycle Lifecycle) error {
 	b.lifecycle = lifecycle
+	b.lifecycleDescriptor = lifecycle.Descriptor()
 	return nil
 }
 
@@ -433,10 +454,10 @@ func (b *Builder) rootOwnedDir(path string, time time.Time) *tar.Header {
 
 func (b *Builder) orderLayer(dest string) (string, error) {
 	buf := &bytes.Buffer{}
-	lifecycleVersion := b.GetLifecycleVersion()
+	lifecycleVersion := b.GetLifecycleDescriptor().Info.Version
 
 	var tomlData interface{}
-	if lifecycleVersion != nil && lifecycleVersion.LessThan(semver.MustParse("0.4.0")) {
+	if lifecycleVersion != nil && lifecycleVersion.LessThan(v0_4_0) {
 		tomlData = v1OrderTOML{Groups: b.metadata.Groups}
 	} else {
 		tomlData = orderTOML{Order: b.order}
@@ -515,7 +536,7 @@ func (b *Builder) buildpackLayer(dest string, bp Buildpack) (string, error) {
 		return "", errors.Wrapf(err, "creating layer tar for buildpack '%s:%s'", bpd.Info.ID, bpd.Info.Version)
 	}
 
-	if lifecycleVersion := b.GetLifecycleVersion(); lifecycleVersion != nil && lifecycleVersion.LessThan(semver.MustParse("0.4.0")) {
+	if lifecycleVersion := b.lifecycleDescriptor.Info.Version; lifecycleVersion != nil && lifecycleVersion.LessThan(v0_4_0) {
 		if err := symlinkLatest(tw, baseTarDir, bpd, b.metadata); err != nil {
 			return "", err
 		}

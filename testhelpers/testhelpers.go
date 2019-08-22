@@ -70,7 +70,12 @@ func AssertError(t *testing.T, actual error, expected string) {
 func AssertContains(t *testing.T, actual, expected string) {
 	t.Helper()
 	if !strings.Contains(actual, expected) {
-		t.Fatalf("Expected: '%s' to contain '%s'", actual, expected)
+		t.Fatalf(
+			"Expected: '%s' to contain '%s'\n\nDiff:%s",
+			actual,
+			expected,
+			cmp.Diff(actual, expected),
+		)
 	}
 }
 
@@ -123,23 +128,6 @@ func AssertNotNil(t *testing.T, actual interface{}) {
 
 func isNil(value interface{}) bool {
 	return value == nil || (reflect.TypeOf(value).Kind() == reflect.Ptr && reflect.ValueOf(value).IsNil())
-}
-
-func AssertNotEq(t *testing.T, actual, expected interface{}) {
-	t.Helper()
-	if diff := cmp.Diff(actual, expected); diff == "" {
-		t.Fatalf("Expected values to differ: %s", actual)
-	}
-}
-
-func AssertDirContainsFileWithContents(t *testing.T, dir string, file string, expected string) {
-	t.Helper()
-	path := filepath.Join(dir, file)
-	bytes, err := ioutil.ReadFile(path)
-	AssertNil(t, err)
-	if string(bytes) != expected {
-		t.Fatalf("file %s in dir %s has wrong contents: %s != %s", file, dir, string(bytes), expected)
-	}
 }
 
 var dockerCliVal *client.Client

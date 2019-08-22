@@ -5,6 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Masterminds/semver"
+
+	"github.com/buildpack/pack/api"
+
 	"github.com/buildpack/pack/internal/fakes"
 
 	"github.com/golang/mock/gomock"
@@ -46,6 +50,7 @@ func testInspectBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 		mockController = gomock.NewController(t)
 		mockClient = cmdmocks.NewMockPackClient(mockController)
 		logger = fakes.NewFakeLogger(&outBuf)
+		
 		command = commands.InspectBuilder(logger, cfg, mockClient)
 	})
 
@@ -123,9 +128,9 @@ ERROR: some local error
 				h.AssertContains(t, outBuf.String(), "Users must build with an explicitly specified run image")
 			})
 
-			it("missing lifecycle version prints Unknown", func() {
+			it("missing lifecycle version prints assumed", func() {
 				h.AssertNil(t, command.Execute())
-				h.AssertContains(t, outBuf.String(), "Lifecycle Version: Unknown")
+				h.AssertContains(t, outBuf.String(), "Lifecycle:\n  Version: 0.3.0")
 			})
 		})
 
@@ -153,7 +158,17 @@ ERROR: some local error
 							{BuildpackInfo: buildpack1Info, Optional: true},
 							{BuildpackInfo: buildpack2Info},
 						}}},
-					LifecycleVersion: "6.7.8",
+					Lifecycle: builder.LifecycleDescriptor{
+						Info: builder.LifecycleInfo{
+							Version: &builder.Version{
+								Version: *semver.MustParse("6.7.8"),
+							},
+						},
+						API: builder.LifecycleAPI{
+							BuildpackVersion: api.MustParse("5.6"),
+							PlatformVersion:  api.MustParse("7.8"),
+						},
+					},
 				}
 				localInfo = &pack.BuilderInfo{
 					Description:     "Some local description",
@@ -165,7 +180,17 @@ ERROR: some local error
 						{Group: []builder.BuildpackRef{{BuildpackInfo: buildpack1Info}}},
 						{Group: []builder.BuildpackRef{{BuildpackInfo: buildpack2Info, Optional: true}}},
 					},
-					LifecycleVersion: "4.5.6",
+					Lifecycle: builder.LifecycleDescriptor{
+						Info: builder.LifecycleInfo{
+							Version: &builder.Version{
+								Version: *semver.MustParse("4.5.6"),
+							},
+						},
+						API: builder.LifecycleAPI{
+							BuildpackVersion: api.MustParse("1.2"),
+							PlatformVersion:  api.MustParse("3.4"),
+						},
+					},
 				}
 			})
 
@@ -188,7 +213,10 @@ Description: Some remote description
 
 Stack: test.stack.id
 
-Lifecycle Version: 6.7.8
+Lifecycle:
+  Version: 6.7.8
+  Buildpack API: 5.6
+  Platform API: 7.8
 
 Run Images:
   first/local (user-configured)
@@ -216,7 +244,10 @@ Description: Some local description
 
 Stack: test.stack.id
 
-Lifecycle Version: 4.5.6
+Lifecycle:
+  Version: 4.5.6
+  Buildpack API: 1.2
+  Platform API: 3.4
 
 Run Images:
   first/local (user-configured)
@@ -257,7 +288,10 @@ Description: Some remote description
 
 Stack: test.stack.id
 
-Lifecycle Version: 6.7.8
+Lifecycle:
+  Version: 6.7.8
+  Buildpack API: 5.6
+  Platform API: 7.8
 
 Run Images:
   first/local (user-configured)
@@ -285,7 +319,10 @@ Description: Some local description
 
 Stack: test.stack.id
 
-Lifecycle Version: 4.5.6
+Lifecycle:
+  Version: 4.5.6
+  Buildpack API: 1.2
+  Platform API: 3.4
 
 Run Images:
   first/local (user-configured)

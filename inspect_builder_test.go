@@ -148,7 +148,7 @@ func testInspectBuilder(t *testing.T, when spec.G, it spec.S) {
 					it("sets the lifecycle version", func() {
 						builderInfo, err := subject.InspectBuilder("some/builder", useDaemon)
 						h.AssertNil(t, err)
-						h.AssertEq(t, builderInfo.LifecycleVersion, "1.2.3")
+						h.AssertEq(t, builderInfo.Lifecycle.Info.Version.String(), "1.2.3")
 					})
 				})
 			})

@@ -269,6 +269,11 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			when("validating order", func() {
+				it.Before(func() {
+					mockLifecycle.EXPECT().Descriptor().Return(builder.LatestLifecycleDescriptor).AnyTimes()
+					h.AssertNil(t, subject.SetLifecycle(mockLifecycle))
+				})
+
 				when("has single buildpack", func() {
 					it.Before(func() {
 						subject.AddBuildpack(bp1v1)
@@ -441,7 +446,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("should set the lifecycle version successfully", func() {
-				h.AssertEq(t, subject.GetLifecycleVersion().String(), "1.2.3")
+				h.AssertEq(t, subject.GetLifecycleDescriptor().Info.Version.String(), "1.2.3")
 			})
 
 			it("should add the lifecycle binaries as an image layer", func() {
@@ -627,7 +632,7 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 					h.AssertEq(t, metadata.Groups[0].Buildpacks[0].ID, "prev.id")
 					h.AssertEq(t, metadata.Stack.RunImage.Image, "prev/run")
 					h.AssertEq(t, metadata.Stack.RunImage.Mirrors[0], "prev/mirror")
-					h.AssertEq(t, subject.GetLifecycleVersion().String(), "6.6.6")
+					h.AssertEq(t, subject.GetLifecycleDescriptor().Info.Version.String(), "6.6.6")
 
 					// adds new buildpack
 					h.AssertEq(t, metadata.Buildpacks[1].ID, "buildpack-1-id")
@@ -638,8 +643,15 @@ func testBuilder(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("#SetOrder", func() {
+			it.Before(func() {
+				mockLifecycle.EXPECT().Descriptor().Return(builder.LatestLifecycleDescriptor).AnyTimes()
+				h.AssertNil(t, subject.SetLifecycle(mockLifecycle))
+			})
+
 			when("the buildpacks exist in the image", func() {
 				it.Before(func() {
+					h.AssertNil(t, subject.SetLifecycle(mockLifecycle))
+
 					subject.AddBuildpack(bp1v1)
 					subject.AddBuildpack(bp2v1)
 					subject.SetOrder(builder.Order{

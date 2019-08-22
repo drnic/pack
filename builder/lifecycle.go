@@ -16,16 +16,34 @@ import (
 	"github.com/buildpack/pack/internal/archive"
 )
 
-const defaultAPI = "0.1"
-const defaultLifecycleVersion = "0.3.0"
+var (
+	apiVersionAssumed = api.MustParse("0.1")
+	apiVersionLatest  = api.MustParse("0.2")
 
-var DefaultLifecycleDescriptor = LifecycleDescriptor{
+	v0_3_0 = semver.MustParse("0.3.0")
+	v0_4_0 = semver.MustParse("0.4.0")
+
+	lifecycleVersionAssumed = &Version{Version: *v0_3_0}
+	lifecycleVersionLatest  = &Version{Version: *v0_4_0}
+)
+
+var AssumedLifecycleDescriptor = LifecycleDescriptor{
 	Info: LifecycleInfo{
-		Version: &Version{*semver.MustParse(defaultLifecycleVersion)},
+		Version: lifecycleVersionAssumed,
 	},
 	API: LifecycleAPI{
-		PlatformVersion:  api.MustParse(defaultAPI),
-		BuildpackVersion: api.MustParse(defaultAPI),
+		PlatformVersion:  apiVersionAssumed,
+		BuildpackVersion: apiVersionAssumed,
+	},
+}
+
+var LatestLifecycleDescriptor = LifecycleDescriptor{
+	Info: LifecycleInfo{
+		Version: lifecycleVersionLatest,
+	},
+	API: LifecycleAPI{
+		PlatformVersion:  apiVersionLatest,
+		BuildpackVersion: apiVersionLatest,
 	},
 }
 
@@ -59,8 +77,8 @@ type LifecycleInfo struct {
 }
 
 type LifecycleAPI struct {
-	PlatformVersion  *api.Version `toml:"platform" json:"platform"`
 	BuildpackVersion *api.Version `toml:"buildpack" json:"buildpack"`
+	PlatformVersion  *api.Version `toml:"platform" json:"platform"`
 }
 
 type lifecycle struct {
@@ -82,7 +100,7 @@ func NewLifecycle(blob Blob) (Lifecycle, error) {
 	if err != nil && errors.Cause(err) == archive.ErrEntryNotExist {
 		return &lifecycle{
 			Blob:       blob,
-			descriptor: DefaultLifecycleDescriptor}, nil
+			descriptor: AssumedLifecycleDescriptor}, nil
 	} else if err != nil {
 		return nil, errors.Wrap(err, "decode lifecycle descriptor")
 	}

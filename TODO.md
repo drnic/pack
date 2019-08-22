@@ -3,9 +3,10 @@
 - [x] Move buildpack to interface similar to lifecycle
 - [x] Lifecycle EITHER version or uri, not both
 - [ ] Lifecycle nothing older than v0.3.0
-- [ ] Move Version to a different package?
-- [ ] Revisit Version pointer structure
 - [x] API version types?
-- [ ] API versions in inspect-builder output (the actual story)
+- [WIP] API versions in inspect-builder output (the actual story)
 - [x] Move buildpack validations to NewBuildpack
 - [ ] Check project for TODO
+- [ ] Move Version to a different package?
+- [ ] Revisit Version pointer structure
+- [ ] Validate previous pack acceptance - only set lifecycle version and it should download 0.3.0 (default)

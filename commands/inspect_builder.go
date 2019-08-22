@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"text/tabwriter"
 
+	"github.com/buildpack/pack/builder"
+
 	"github.com/spf13/cobra"
 
 	"github.com/buildpack/pack"
@@ -76,11 +78,25 @@ func inspectBuilderOutput(logger logging.Logger, client PackClient, imageName st
 	logger.Infof("Stack: %s", info.Stack)
 	logger.Info("")
 
-	lcycleVer := info.LifecycleVersion
-	if lcycleVer == "" {
-		lcycleVer = "Unknown"
+	lcVersion := info.Lifecycle.Info.Version
+	if info.Lifecycle.Info.Version == nil {
+		lcVersion = builder.AssumedLifecycleDescriptor.Info.Version
 	}
-	logger.Infof("Lifecycle Version: %s", lcycleVer)
+
+	apiBpVersion := info.Lifecycle.API.BuildpackVersion
+	if info.Lifecycle.API.BuildpackVersion == nil {
+		apiBpVersion = builder.AssumedLifecycleDescriptor.API.BuildpackVersion
+	}
+
+	apiPlatformVersion := info.Lifecycle.API.PlatformVersion
+	if info.Lifecycle.API.PlatformVersion == nil {
+		apiPlatformVersion = builder.AssumedLifecycleDescriptor.API.PlatformVersion
+	}
+
+	logger.Info("Lifecycle:")
+	logger.Infof("  Version: %s", lcVersion.String())
+	logger.Infof("  Buildpack API: %s", apiBpVersion.String())
+	logger.Infof("  Platform API: %s", apiPlatformVersion.String())
 	logger.Info("")
 
 	if info.RunImage == "" {

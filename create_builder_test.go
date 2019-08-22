@@ -244,7 +244,7 @@ func testCreateBuilder(t *testing.T, when spec.G, it spec.S) {
 					Optional:      false,
 				}},
 			}})
-			h.AssertEq(t, builderImage.GetLifecycleVersion().String(), "3.4.5")
+			h.AssertEq(t, builderImage.GetLifecycleDescriptor().Info.Version.String(), "3.4.5")
 
 			layerTar, err := fakeBuildImage.FindLayerWithPath("/lifecycle")
 			h.AssertNil(t, err)

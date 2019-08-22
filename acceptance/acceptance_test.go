@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -824,7 +825,7 @@ func testAcceptance(t *testing.T, when spec.G, it spec.S, builder, runImageMirro
 		})
 	})
 
-	when("inspect-builder", func() {
+	when.Focus("inspect-builder", func() {
 		it("displays configuration for a builder (local and remote)", func() {
 			configuredRunImage := "some-registry.com/pack-test/run1"
 			cmd := packCmd("set-run-image-mirrors", "pack-test/run", "--mirror", configuredRunImage)
@@ -834,9 +835,23 @@ func testAcceptance(t *testing.T, when spec.G, it spec.S, builder, runImageMirro
 			cmd = packCmd("inspect-builder", builder)
 			output = h.Run(t, cmd)
 
-			expected, err := ioutil.ReadFile(filepath.Join(packFixturesDir, "inspect_builder_output.txt"))
+			outputTemplate, err := ioutil.ReadFile(filepath.Join(packFixturesDir, "inspect_builder_output.txt"))
 			h.AssertNil(t, err)
-			h.AssertEq(t, output, fmt.Sprintf(string(expected), builder, &lifecycleVersion, runImageMirror, &lifecycleVersion, runImageMirror))
+			
+			tpl := template.Must(template.New("output").Parse(string(outputTemplate)))
+			data := map[string]interface{}{
+				"builder_name":          builder,
+				"lifecycle_version":     lifecycleVersion.String(),
+				"buildpack_api_version": "9.9",
+				"platform_api_version":  "9.9",
+				"run_image_mirror":      runImageMirror,
+			}
+
+			var expectedOutput bytes.Buffer
+			err = tpl.Execute(&expectedOutput, data)
+			h.AssertNil(t, err)
+
+			h.AssertEq(t, output, expectedOutput.String())
 		})
 	})
 }
@@ -1016,14 +1031,8 @@ func createBuilder(t *testing.T, runImageMirror, builderTOMLPath, packPath, life
 	_, err = builderConfigFile.Write([]byte("[lifecycle]\n"))
 	h.AssertNil(t, err)
 
-	if lifecyclePath != "" {
-		t.Logf("adding lifecycle path '%s' to builder config", lifecyclePath)
-		_, err = builderConfigFile.Write([]byte(fmt.Sprintf("uri = \"%s\"\n", strings.ReplaceAll(lifecyclePath, `\`, `\\`))))
-		h.AssertNil(t, err)
-	}
-
-	t.Logf("adding lifecycle version '%s' to builder config", &lifecycleVersion)
-	_, err = builderConfigFile.Write([]byte(fmt.Sprintf("version = \"%s\"\n", &lifecycleVersion)))
+	t.Logf("adding lifecycle path '%s' to builder config", lifecyclePath)
+	_, err = builderConfigFile.Write([]byte(fmt.Sprintf("uri = \"%s\"\n", strings.ReplaceAll(lifecyclePath, `\`, `\\`))))
 	h.AssertNil(t, err)
 
 	builderConfigFile.Close()
