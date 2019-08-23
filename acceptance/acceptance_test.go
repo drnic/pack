@@ -21,8 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/buildpack/pack/api"
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
@@ -127,12 +125,33 @@ func TestAcceptance(t *testing.T) {
 	resolvedCombos, err := resolveRunCombinations(combos, packPath, previousPackPath, lifecyclePath, lifecycleDescriptor, previousLifecyclePath, previousLifecycleDescriptor)
 	h.AssertNil(t, err)
 
-	objPrinter := spew.NewDefaultConfig()
-	objPrinter.DisablePointerAddresses = true
-
 	for k, combo := range resolvedCombos {
-		t.Logf("setting up run combination %s:\n%s", style.Symbol(k), objPrinter.Sdump(combo))
+		t.Logf(`setting up run combination %s:
+pack:
+ |__ path: %s
+ |__ fixtures: %s
 
+create builder:
+ |__ pack path: %s
+ |__ builder toml: %s
+
+lifecycle 
+ |__ path: %s
+ |__ version: %s
+ |__ buildpack api: %s
+ |__ platform api: %s
+`,
+			style.Symbol(k),
+			combo.packPath,
+			combo.packFixturesDir,
+			combo.packCreateBuilderPath,
+			combo.builderTomlPath,
+			combo.lifecyclePath,
+			combo.lifecycleDescriptor.Info.Version,
+			combo.lifecycleDescriptor.API.BuildpackVersion,
+			combo.lifecycleDescriptor.API.PlatformVersion,
+		)
+		
 		bldr := createBuilder(t, runImageMirror, combo.builderTomlPath, combo.packCreateBuilderPath, combo.lifecyclePath, combo.lifecycleDescriptor)
 		//noinspection ALL
 		defer h.DockerRmi(dockerCli, bldr)
@@ -330,10 +349,10 @@ func testAcceptance(t *testing.T, when spec.G, it spec.S, builder, runImageMirro
 						cmd := packCmd(
 							"build", repoName,
 							"-p", filepath.Join("testdata", "mock_app"),
-							"--buildpack", notBuilderTgz, // tgz not in builder
+							"--buildpack", notBuilderTgz,                         // tgz not in builder
 							"--buildpack", "simple/layers@simple-layers-version", // with version
-							"--buildpack", "noop.buildpack", // without version
-							"--buildpack", "read/env@latest", // latest (for backwards compatibility)
+							"--buildpack", "noop.buildpack",                      // without version
+							"--buildpack", "read/env@latest",                     // latest (for backwards compatibility)
 							"--env", "DETECT_ENV_BUILDPACK=true",
 						)
 						output := h.Run(t, cmd)
