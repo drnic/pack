@@ -12,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/buildpack/pack/style"
+
 	"github.com/buildpack/pack/internal/paths"
 	"github.com/buildpack/pack/logging"
 )
@@ -34,31 +36,34 @@ func NewDownloader(logger logging.Logger, baseCacheDir string) *downloader {
 }
 
 func (d *downloader) Download(pathOrUri string) (Blob, error) {
-	var (
-		path string
-		err  error
-	)
 	if paths.IsURI(pathOrUri) {
 		parsedUrl, err := url.Parse(pathOrUri)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "parsing path/uri %s", style.Symbol(pathOrUri))
 		}
 
+		var path string
 		switch parsedUrl.Scheme {
 		case "file":
 			path, err = paths.UriToFilePath(pathOrUri)
 		case "http", "https":
 			path, err = d.handleHTTP(pathOrUri)
 		default:
-			return nil, fmt.Errorf("unsupported protocol '%s' in URI %q", parsedUrl.Scheme, pathOrUri)
+			err = fmt.Errorf("unsupported protocol %s in URI %s", style.Symbol(parsedUrl.Scheme), style.Symbol(pathOrUri))
 		}
+		if err != nil {
+			return nil, err
+		}
+
+		return &blob{Path: path}, nil
 	} else {
-		path, err = d.handleFile(pathOrUri)
+		path, err := d.handleFile(pathOrUri)
+		if err != nil {
+			return nil, err
+		}
+
+		return &blob{Path: path}, nil
 	}
-	if err != nil {
-		return nil, err
-	}
-	return &blob{Path: path}, nil
 }
 
 func (d *downloader) handleFile(path string) (string, error) {
@@ -96,7 +101,7 @@ func (d *downloader) handleHTTP(uri string) (string, error) {
 
 	reader, etag, err := d.downloadAsStream(uri, etag)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to download from %q", uri)
+		return "", err
 	} else if reader == nil {
 		return cachePath, nil
 	}
@@ -104,17 +109,17 @@ func (d *downloader) handleHTTP(uri string) (string, error) {
 
 	fh, err := os.Create(cachePath)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "create cache path %s", style.Symbol(cachePath))
 	}
 	defer fh.Close()
 
 	_, err = io.Copy(fh, reader)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "writing cache")
 	}
 
 	if err = ioutil.WriteFile(etagFile, []byte(etag), 0744); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "writing etag")
 	}
 
 	return cachePath, nil
@@ -136,16 +141,19 @@ func (d *downloader) downloadAsStream(uri string, etag string) (io.ReadCloser, s
 	}
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		d.logger.Debugf("Downloading from %q", uri)
+		d.logger.Debugf("Downloading from %s", style.Symbol(uri))
 		return resp.Body, resp.Header.Get("Etag"), nil
 	}
 
 	if resp.StatusCode == 304 {
-		d.logger.Debugf("Using cached version of %q", uri)
+		d.logger.Debugf("Using cached version of %s", style.Symbol(uri))
 		return nil, etag, nil
 	}
 
-	return nil, "", fmt.Errorf("could not download from %q, code http status %d", uri, resp.StatusCode)
+	return nil, "", fmt.Errorf(
+		"could not download from %s, code http status %s",
+		style.Symbol(uri), style.Symbol("%d", resp.StatusCode),
+	)
 }
 
 func (d *downloader) versionedCacheDir() string {

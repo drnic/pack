@@ -6,6 +6,7 @@ require (
 	github.com/apex/log v1.1.0
 	github.com/buildpack/imgutil v0.0.0-20190509214933-76de939dfb34
 	github.com/buildpack/lifecycle v0.1.1-0.20190510142604-8612386b1cea
+	github.com/davecgh/go-spew v1.1.1
 	github.com/dgodd/dockerdial v1.0.1
 	github.com/docker/docker v0.7.3-0.20190307005417-54dddadc7d5d
 	github.com/docker/go-connections v0.4.0

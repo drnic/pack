@@ -338,7 +338,7 @@ func hasBuildpackWithVersion(bps []BuildpackInfo, version string) bool {
 	return false
 }
 
-// TODO: error out when using incompatible lifecycle and buildpacks
+// TODO: error out when using incompatible lifecycle and buildpacks [https://github.com/buildpack/pack/issues/254]
 func validateBuildpacks(stackID string, bps []Buildpack) error {
 	bpLookup := map[string]interface{}{}
 

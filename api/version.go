@@ -53,7 +53,7 @@ func NewVersion(v string) (*Version, error) {
 	return &Version{major: major, minor: minor}, nil
 }
 
-func (v Version) String() string {
+func (v *Version) String() string {
 	return fmt.Sprintf("%d.%d", v.major, v.minor)
 }
 

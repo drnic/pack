@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Masterminds/semver"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
@@ -63,15 +62,9 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 	l.Setup(opts)
 	defer l.Cleanup()
 
-	var buildCache, launchCache Cache
-	if l.supportsVolumeCache() {
-		buildCache = cache.NewVolumeCache(opts.Image, "build", l.docker)
-		launchCache = cache.NewVolumeCache(opts.Image, "launch", l.docker)
-		l.logger.Debugf("Using build cache volume %s", style.Symbol(buildCache.Name()))
-	} else {
-		buildCache = cache.NewImageCache(opts.Image, l.docker)
-		l.logger.Debugf("Using build cache image %s", style.Symbol(buildCache.Name()))
-	}
+	buildCache := cache.NewVolumeCache(opts.Image, "build", l.docker)
+	launchCache := cache.NewVolumeCache(opts.Image, "launch", l.docker)
+	l.logger.Debugf("Using build cache volume %s", style.Symbol(buildCache.Name()))
 
 	if opts.ClearCache {
 		if err := buildCache.Clear(ctx); err != nil {
@@ -97,18 +90,14 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 	if opts.ClearCache {
 		l.logger.Debug("Skipping 'restore' due to clearing cache")
 	} else {
-		if err := l.Restore(ctx, l.supportsVolumeCache(), buildCache.Name()); err != nil {
+		if err := l.Restore(ctx, true, buildCache.Name()); err != nil {
 			return err
 		}
 	}
 
 	l.logger.Debug(style.Step("ANALYZING"))
-	if opts.ClearCache && lifecycleVersion.LessThan(semver.MustParse("0.3.0")) {
-		l.logger.Debug("Skipping 'analyze' due to clearing cache")
-	} else {
-		if err := l.Analyze(ctx, opts.Image.Name(), opts.Publish, opts.ClearCache); err != nil {
-			return err
-		}
+	if err := l.Analyze(ctx, opts.Image.Name(), opts.Publish, opts.ClearCache); err != nil {
+		return err
 	}
 
 	l.logger.Debug(style.Step("BUILDING"))
@@ -117,16 +106,13 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 	}
 
 	l.logger.Debug(style.Step("EXPORTING"))
-	launchCacheName := ""
-	if l.supportsVolumeCache() {
-		launchCacheName = launchCache.Name()
-	}
+	launchCacheName := launchCache.Name()
 	if err := l.Export(ctx, opts.Image.Name(), opts.RunImage, opts.Publish, launchCacheName); err != nil {
 		return err
 	}
 
 	l.logger.Debug(style.Step("CACHING"))
-	if err := l.Cache(ctx, l.supportsVolumeCache(), buildCache.Name()); err != nil {
+	if err := l.Cache(ctx, true, buildCache.Name()); err != nil {
 		return err
 	}
 	return nil
@@ -160,13 +146,4 @@ func randString(n int) string {
 		b[i] = 'a' + byte(rand.Intn(26))
 	}
 	return string(b)
-}
-
-// TODO Remove, ongoing versions all support volume cache
-func (l *Lifecycle) supportsVolumeCache() bool {
-	lifecycleDescriptor := l.builder.GetLifecycleDescriptor()
-	if lifecycleDescriptor.Info.Version == nil {
-		return false
-	}
-	return lifecycleDescriptor.Info.Version.Compare(semver.MustParse("0.2.0")) >= 0
 }

@@ -55,7 +55,7 @@ func InspectBuilder(logger logging.Logger, cfg config.Config, client PackClient)
 	return cmd
 }
 
-// TODO: If necessary, how do we present buildpack order (nested order)?
+// TODO: present buildpack order (inc. nested) [https://github.com/buildpack/pack/issues/253].
 func inspectBuilderOutput(logger logging.Logger, client PackClient, imageName string, local bool, cfg config.Config) {
 	info, err := client.InspectBuilder(imageName, local)
 	if err != nil {

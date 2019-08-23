@@ -21,13 +21,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/buildpack/pack/api"
 	"github.com/buildpack/pack/blob"
 	"github.com/buildpack/pack/builder"
 
 	"github.com/buildpack/pack/style"
 
-	"github.com/Masterminds/semver"
 	"github.com/buildpack/lifecycle/metadata"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -58,9 +59,6 @@ var (
 	packHome       string
 	dockerCli      *client.Client
 	registryConfig *h.TestRegistryConfig
-
-	lifecycleV020 = semver.MustParse("0.2.0")
-	lifecycleV030 = semver.MustParse("0.3.0")
 )
 
 func TestAcceptance(t *testing.T) {
@@ -129,8 +127,11 @@ func TestAcceptance(t *testing.T) {
 	resolvedCombos, err := resolveRunCombinations(combos, packPath, previousPackPath, lifecyclePath, lifecycleDescriptor, previousLifecyclePath, previousLifecycleDescriptor)
 	h.AssertNil(t, err)
 
+	objPrinter := spew.NewDefaultConfig()
+	objPrinter.DisablePointerAddresses = true
+
 	for k, combo := range resolvedCombos {
-		t.Logf("setting up run combination %s as %+v", style.Symbol(k), combo)
+		t.Logf("setting up run combination %s:\n%s", style.Symbol(k), objPrinter.Sdump(combo))
 
 		bldr := createBuilder(t, runImageMirror, combo.builderTomlPath, combo.packCreateBuilderPath, combo.lifecyclePath, combo.lifecycleDescriptor)
 		//noinspection ALL
@@ -224,8 +225,8 @@ func testAcceptance(t *testing.T, when spec.G, it spec.S, builder, runImageMirro
 				}
 				defer h.DockerRmi(dockerCli, imgId)
 
-				t.Log("uses a build cache image when appropriate")
-				h.AssertContains(t, output, "Using build cache image")
+				t.Log("uses a build cache volume")
+				h.AssertContains(t, output, "Using build cache volume")
 
 				t.Log("app is runnable")
 				assertMockAppRunsWithOutput(t, repoName, "Launch Dep Contents", "Cached Dep Contents")
@@ -822,7 +823,7 @@ func testAcceptance(t *testing.T, when spec.G, it spec.S, builder, runImageMirro
 		})
 	})
 
-	when.Focus("inspect-builder", func() {
+	when("inspect-builder", func() {
 		it("displays configuration for a builder (local and remote)", func() {
 			configuredRunImage := "some-registry.com/pack-test/run1"
 			cmd := packCmd("set-run-image-mirrors", "pack-test/run", "--mirror", configuredRunImage)
