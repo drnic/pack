@@ -157,7 +157,6 @@ func testPhase(t *testing.T, when spec.G, it spec.S) {
 					})
 
 					it("returns an error", func() {
-						t.Skip()
 						logger := fakes.NewFakeLogger(&outBuf)
 						subject, err = CreateFakeLifecycle(tmpFakeAppDir, docker, logger)
 						h.AssertNil(t, err)
