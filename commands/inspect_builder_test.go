@@ -50,7 +50,7 @@ func testInspectBuilderCommand(t *testing.T, when spec.G, it spec.S) {
 		mockController = gomock.NewController(t)
 		mockClient = cmdmocks.NewMockPackClient(mockController)
 		logger = fakes.NewFakeLogger(&outBuf)
-		
+
 		command = commands.InspectBuilder(logger, cfg, mockClient)
 	})
 

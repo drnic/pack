@@ -23,7 +23,7 @@ Buildpacks:
 
 Detection Order:
   Group #1:
-    simple/layers@simple-layers-version
+    simple/layers@simple-layers-version    
     read/env@read-env-version              (optional)
 
 Local
@@ -39,7 +39,7 @@ Lifecycle:
 Run Images:
   some-registry.com/pack-test/run1 (user-configured)
   pack-test/run
-  %s
+  {{.run_image_mirror}}
 
 Buildpacks:
   ID                    VERSION
@@ -49,5 +49,5 @@ Buildpacks:
 
 Detection Order:
   Group #1:
-    simple/layers@simple-layers-version
+    simple/layers@simple-layers-version    
     read/env@read-env-version              (optional)

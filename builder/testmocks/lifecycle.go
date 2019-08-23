@@ -8,7 +8,6 @@ import (
 	io "io"
 	reflect "reflect"
 
-	semver "github.com/Masterminds/semver"
 	gomock "github.com/golang/mock/gomock"
 
 	builder "github.com/buildpack/pack/builder"
@@ -64,18 +63,4 @@ func (m *MockLifecycle) Open() (io.ReadCloser, error) {
 func (mr *MockLifecycleMockRecorder) Open() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockLifecycle)(nil).Open))
-}
-
-// Validate mocks base method
-func (m *MockLifecycle) Validate(arg0 *semver.Version) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Validate indicates an expected call of Validate
-func (mr *MockLifecycleMockRecorder) Validate(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockLifecycle)(nil).Validate), arg0)
 }
