@@ -55,14 +55,14 @@ func (d *downloader) Download(pathOrUri string) (Blob, error) {
 			return nil, err
 		}
 
-		return &blob{Path: path}, nil
+		return &blob{path: path}, nil
 	} else {
 		path, err := d.handleFile(pathOrUri)
 		if err != nil {
 			return nil, err
 		}
 
-		return &blob{Path: path}, nil
+		return &blob{path: path}, nil
 	}
 }
 

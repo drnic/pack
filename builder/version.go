@@ -15,7 +15,7 @@ func (v *Version) String() string {
 }
 
 // MarshalText makes Version satisfy the encoding.TextMarshaler interface.
-func (v Version) MarshalText() ([]byte, error) {
+func (v *Version) MarshalText() ([]byte, error) {
 	return []byte(v.Version.Original()), nil
 }
 

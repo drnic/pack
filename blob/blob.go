@@ -17,23 +17,23 @@ type Blob interface {
 }
 
 type blob struct {
-	Path string
+	path string
 }
 
 func NewBlob(path string) Blob {
-	return &blob{Path: path}
+	return &blob{path: path}
 }
 
 // Open returns an io.ReadCloser whose contents are in tar archive format
 func (b blob) Open() (io.ReadCloser, error) {
-	fi, err := os.Stat(b.Path)
+	fi, err := os.Stat(b.path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "read blob at path '%s'", b.Path)
+		return nil, errors.Wrapf(err, "read blob at path '%s'", b.path)
 	}
 	if fi.IsDir() {
-		return archive.ReadDirAsTar(b.Path, ".", 0, 0, -1), nil
+		return archive.ReadDirAsTar(b.path, ".", 0, 0, -1), nil
 	}
-	fh, err := os.Open(b.Path)
+	fh, err := os.Open(b.path)
 	if err != nil {
 		return nil, errors.Wrap(err, "open buildpack archive")
 	}

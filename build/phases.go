@@ -35,32 +35,20 @@ func (l *Lifecycle) Detect(ctx context.Context) error {
 	return detect.Run(ctx)
 }
 
-func (l *Lifecycle) Restore(ctx context.Context, useVolumeCache bool, cacheName string) error {
+func (l *Lifecycle) Restore(ctx context.Context, cacheName string) error {
 	var restore *Phase
 	var err error
 
-	if useVolumeCache {
-		restore, err = l.NewPhase(
-			"restorer",
-			WithDaemonAccess(),
-			WithArgs(
-				"-path", cacheDir,
-				"-group", groupPath,
-				"-layers", layersDir,
-			),
-			WithBinds(fmt.Sprintf("%s:%s", cacheName, cacheDir)),
-		)
-	} else {
-		restore, err = l.NewPhase(
-			"restorer",
-			WithDaemonAccess(),
-			WithArgs(
-				"-image", cacheName,
-				"-group", groupPath,
-				"-layers", layersDir,
-			),
-		)
-	}
+	restore, err = l.NewPhase(
+		"restorer",
+		WithDaemonAccess(),
+		WithArgs(
+			"-path", cacheDir,
+			"-group", groupPath,
+			"-layers", layersDir,
+		),
+		WithBinds(fmt.Sprintf("%s:%s", cacheName, cacheDir)),
+	)
 
 	if err != nil {
 		return err
@@ -184,32 +172,20 @@ func (l *Lifecycle) newExport(repoName, runImage string, publish bool, launchCac
 	}
 }
 
-func (l *Lifecycle) Cache(ctx context.Context, useVolumeCache bool, cacheName string) error {
+func (l *Lifecycle) Cache(ctx context.Context, cacheName string) error {
 	var cache *Phase
 	var err error
 
-	if useVolumeCache {
-		cache, err = l.NewPhase(
-			"cacher",
-			WithDaemonAccess(),
-			WithArgs(
-				"-path", cacheDir,
-				"-group", groupPath,
-				"-layers", layersDir,
-			),
-			WithBinds(fmt.Sprintf("%s:%s", cacheName, cacheDir)),
-		)
-	} else {
-		cache, err = l.NewPhase(
-			"cacher",
-			WithDaemonAccess(),
-			WithArgs(
-				"-image", cacheName,
-				"-group", groupPath,
-				"-layers", layersDir,
-			),
-		)
-	}
+	cache, err = l.NewPhase(
+		"cacher",
+		WithDaemonAccess(),
+		WithArgs(
+			"-path", cacheDir,
+			"-group", groupPath,
+			"-layers", layersDir,
+		),
+		WithBinds(fmt.Sprintf("%s:%s", cacheName, cacheDir)),
+	)
 
 	if err != nil {
 		return err

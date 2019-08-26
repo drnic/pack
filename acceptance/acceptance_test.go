@@ -151,7 +151,7 @@ lifecycle
 			combo.lifecycleDescriptor.API.BuildpackVersion,
 			combo.lifecycleDescriptor.API.PlatformVersion,
 		)
-		
+
 		bldr := createBuilder(t, runImageMirror, combo.builderTomlPath, combo.packCreateBuilderPath, combo.lifecyclePath, combo.lifecycleDescriptor)
 		//noinspection ALL
 		defer h.DockerRmi(dockerCli, bldr)
@@ -349,10 +349,10 @@ func testAcceptance(t *testing.T, when spec.G, it spec.S, builder, runImageMirro
 						cmd := packCmd(
 							"build", repoName,
 							"-p", filepath.Join("testdata", "mock_app"),
-							"--buildpack", notBuilderTgz,                         // tgz not in builder
+							"--buildpack", notBuilderTgz, // tgz not in builder
 							"--buildpack", "simple/layers@simple-layers-version", // with version
-							"--buildpack", "noop.buildpack",                      // without version
-							"--buildpack", "read/env@latest",                     // latest (for backwards compatibility)
+							"--buildpack", "noop.buildpack", // without version
+							"--buildpack", "read/env@latest", // latest (for backwards compatibility)
 							"--env", "DETECT_ENV_BUILDPACK=true",
 						)
 						output := h.Run(t, cmd)
@@ -843,7 +843,7 @@ func testAcceptance(t *testing.T, when spec.G, it spec.S, builder, runImageMirro
 	})
 
 	when("inspect-builder", func() {
-		it("displays configuration for a builder (local and remote)", func() {
+		it.Focus("displays configuration for a builder (local and remote)", func() {
 			configuredRunImage := "some-registry.com/pack-test/run1"
 			cmd := packCmd("set-run-image-mirrors", "pack-test/run", "--mirror", configuredRunImage)
 			output := h.Run(t, cmd)
